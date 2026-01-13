@@ -2,20 +2,22 @@
 import { computed } from "vue";
 
 const props = defineProps<{
-  isOpen: boolean;
-  orderItems: any[];
-  total: number;
-  orderNumber?: string;
-  shopName?: string;
-  date?: string;
-  cashReceived?: number;
-  change?: number;
+  show: boolean;
+  receiptData: {
+    items: any[];
+    total: number;
+    cashReceived: number;
+    change: number;
+    orderNumber: string;
+    shopName?: string;
+    date?: string;
+  };
 }>();
 
 const emit = defineEmits(["close", "print"]);
 
 const formattedDate = computed(() => {
-  return props.date || new Date().toLocaleString();
+  return props.receiptData.date || new Date().toLocaleString();
 });
 
 function handlePrint() {
@@ -26,7 +28,7 @@ function handlePrint() {
 
 <template>
   <div
-    v-if="isOpen"
+    v-if="show"
     class="fixed inset-0 z-50 flex items-center justify-center p-4 print:p-0"
   >
     <!-- Backdrop (Hide in print) -->
@@ -79,7 +81,7 @@ function handlePrint() {
       >
         <div class="text-center mb-6">
           <h1 class="text-xl font-bold uppercase mb-2">
-            {{ shopName || "Lucky Cafe" }}
+            {{ receiptData.shopName || "Lucky Cafe" }}
           </h1>
           <p class="text-xs text-gray-500">Phnom Penh, Cambodia</p>
           <p class="text-xs text-gray-500">Tel: 012 345 678</p>
@@ -88,7 +90,9 @@ function handlePrint() {
         <div class="border-b border-dashed border-gray-300 pb-4 mb-4">
           <div class="flex justify-between">
             <span>Order #:</span>
-            <span class="font-bold">{{ orderNumber || "PENDING" }}</span>
+            <span class="font-bold">{{
+              receiptData.orderNumber || "PENDING"
+            }}</span>
           </div>
           <div class="flex justify-between">
             <span>Date:</span>
@@ -110,7 +114,7 @@ function handlePrint() {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr v-for="item in orderItems" :key="item.id">
+              <tr v-for="item in receiptData.items" :key="item.id">
                 <td class="py-2 pr-2 align-top">
                   <div class="font-bold">{{ item.product.name }}</div>
                   <div v-if="item.variant" class="text-xs text-gray-500">
@@ -149,21 +153,21 @@ function handlePrint() {
         <div class="border-t border-dashed border-gray-300 pt-4 space-y-1">
           <div class="flex justify-between text-base font-bold">
             <span>TOTAL</span>
-            <span>${{ Number(total).toFixed(2) }}</span>
+            <span>${{ Number(receiptData.total).toFixed(2) }}</span>
           </div>
           <div
-            v-if="cashReceived"
+            v-if="receiptData.cashReceived"
             class="flex justify-between text-xs text-gray-600"
           >
             <span>Cash Received</span>
-            <span>${{ Number(cashReceived).toFixed(2) }}</span>
+            <span>${{ Number(receiptData.cashReceived).toFixed(2) }}</span>
           </div>
           <div
-            v-if="change !== undefined"
+            v-if="receiptData.change !== undefined"
             class="flex justify-between text-xs text-gray-600"
           >
             <span>Change</span>
-            <span>${{ Number(change).toFixed(2) }}</span>
+            <span>${{ Number(receiptData.change).toFixed(2) }}</span>
           </div>
         </div>
 

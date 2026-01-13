@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import apiClient from "@/services/api";
 import { useAuthStore } from "@/stores/auth";
+import ImageUpload from "@/components/ImageUpload.vue";
 
 const authStore = useAuthStore();
 const products = ref<any[]>([]);
@@ -10,14 +11,15 @@ const loading = ref(true);
 const showModal = ref(false);
 const editingProduct = ref<any>(null);
 
-const form = ref<any>({
+const form = ref({
   category_id: "",
   name: "",
-  price: 0,
+  price: "",
   image_url: "",
   is_available: true,
-  variants: [],
+  variants: [] as any[],
 });
+const pendingImageFile = ref<File | null>(null);
 
 onMounted(async () => {
   await Promise.all([fetchProducts(), fetchCategories()]);
@@ -50,11 +52,12 @@ function openAddModal() {
   form.value = {
     category_id: categories.value[0]?.id || "",
     name: "",
-    price: 0,
+    price: "",
     image_url: "",
     is_available: true,
     variants: [],
   };
+  pendingImageFile.value = null;
   showModal.value = true;
 }
 
@@ -64,12 +67,43 @@ function openEditModal(product: any) {
     ...product,
     variants: product.variants || [],
   };
+  pendingImageFile.value = null;
   showModal.value = true;
+}
+
+async function uploadToCloudinary(file: File) {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  if (!cloudName) throw new Error("Cloudinary not configured");
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append(
+    "upload_preset",
+    import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "coffee-pos-unsigned"
+  );
+  formData.append("folder", "coffee-pos/products");
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: "POST", body: formData }
+  );
+
+  if (!response.ok) throw new Error("Image upload failed");
+  const data = await response.json();
+  return data.secure_url;
 }
 
 async function handleSubmit() {
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
+  loading.value = true;
+
   try {
+    // Upload image if selected
+    if (pendingImageFile.value) {
+      const imageUrl = await uploadToCloudinary(pendingImageFile.value);
+      form.value.image_url = imageUrl;
+    }
+
     if (editingProduct.value) {
       await apiClient.put(
         `/staff/admin/${shopSlug}/menu/products/${editingProduct.value.id}`,
@@ -82,9 +116,13 @@ async function handleSubmit() {
       );
     }
     await fetchProducts();
+    await fetchProducts();
     showModal.value = false;
   } catch (e) {
+    console.error(e);
     alert("Failed to save product");
+  } finally {
+    loading.value = false;
   }
 }
 
@@ -327,17 +365,12 @@ function formatCurrency(val: number) {
               </div>
             </div>
           </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Image URL</label
-            >
-            <input
-              v-model="form.image_url"
-              type="text"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
-              placeholder="https://..."
-            />
-          </div>
+          <!-- Image Upload -->
+          <ImageUpload
+            v-model="form.image_url"
+            folder="products"
+            @fileSelected="pendingImageFile = $event"
+          />
 
           <!-- Variants Section -->
           <div class="border-t border-gray-200 pt-6 mt-6">
