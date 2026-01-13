@@ -1,0 +1,167 @@
+# 📱 Mobile Web Menu: UI Wireframe
+
+### **Phase 1: The "Handshake" (Landing)**
+
+*User Scans QR Code on Table 5.*
+*URL Loads: `v-store.com/s/lucky-cafe/t/a1b2c3*`
+
+**[ Screen 1: Welcome ]**
+
+```text
++---------------------------------------+
+|  [Logo] Lucky Cafe                    |
+|                                       |
+|       👋 Welcome to Table 05          |
+|                                       |
+|    (  Image of delicious coffee  )    |
+|                                       |
+|  [      View Menu & Order       ]     | <--- Big Green Button
+|                                       |
+|  [ Call Waiter ]    [ Free WiFi ]     |
++---------------------------------------+
+
+```
+
+* **Logic:** System initializes the `table_session` in the background.
+
+---
+
+### **Phase 2: The Menu (Browsing)**
+
+*User clicks "View Menu".*
+
+**[ Screen 2: The Menu ]**
+
+```text
++---------------------------------------+
+|  Lucky Cafe (T-05)            🛒(0)   | <--- Floating Cart Icon
+|---------------------------------------|
+|  🔍 Search for "Latte"...             |
+|---------------------------------------|
+|  [Coffee] [Tea] [Frappe] [Cake]       | <--- Horizontal Scroll Tabs
+|---------------------------------------|
+|  ** COFFEE ** |
+|                                       |
+|  (Img) Iced Latte             $2.50   |
+|        Classic espresso...    [ + ]   | <--- "Add" Button opens Modal
+|                                       |
+|  (Img) Cappuccino             $3.00   |
+|        Hot & Foamy...         [ + ]   |
+|                                       |
++---------------------------------------+
+
+```
+
+---
+
+### **Phase 3: Customization (The Modal)**
+
+*User clicks `[+]` on Iced Latte.*
+
+**[ Pop-up Modal: Product Details ]**
+
+```text
++---------------------------------------+
+|  Iced Latte                           |
+|  $2.50                                |
+|---------------------------------------|
+|  ** Size ** |
+|  (o) Regular (16oz)                   |
+|  ( ) Large (22oz)        + $0.50      |
+|                                       |
+|  ** Sweetness ** |
+|  ( ) 0%   (o) 50%   ( ) 100%          |
+|                                       |
+|  ** Notes ** |
+|  [ Type here... (e.g. Less ice) ]     |
+|                                       |
+|       [ Add to Cart - $3.00 ]         | <--- Dynamic Price Update
++---------------------------------------+
+
+```
+
+---
+
+### **Phase 4: The Cart & Payment**
+
+*User clicks the 🛒 Icon.*
+
+**[ Screen 3: Checkout ]**
+
+```text
++---------------------------------------+
+|  Your Order (Table 05)                |
+|---------------------------------------|
+|  1x Iced Latte (L, 50%)       $3.00   |
+|     [Edit]  [Remove]                  |
+|                                       |
+|  1x Croissant                 $1.50   |
+|---------------------------------------|
+|  Total:                       $4.50   |
+|---------------------------------------|
+|  ** Payment Method ** |
+|                                       |
+|  [  KHQR SCAN  ]    [  CASH ($)  ]    | <--- Toggle Switch
+|  (Auto-Verify)      (Pay at Counter)  |
+|                                       |
+|      [ PLACE ORDER - $4.50 ]          |
++---------------------------------------+
+
+```
+
+---
+
+### **Phase 5: Verification (The Magic Moment)**
+
+*If User selects **KHQR**, this screen appears.*
+
+**[ Screen 4: Payment ]**
+
+```text
++---------------------------------------+
+|  Scan to Pay                          |
+|  Total: $4.50                         |
+|---------------------------------------|
+|                                       |
+|       [   DYNAMIC KHQR IMAGE   ]      |
+|       [      GENERATED HERE    ]      |
+|                                       |
+|---------------------------------------|
+|  Waiting for payment... ⏳            |
+|  (System checks API every 2 sec)      |
++---------------------------------------+
+
+```
+
+* **Logic:** The frontend polls your server: `/api/check-status/order_123`.
+* **Server:** Checks `transactions` table (which is updated by your Cron Job).
+
+---
+
+### **Phase 6: Success!**
+
+*Once payment is confirmed OR user chose Cash.*
+
+**[ Screen 5: Order Confirmed ]**
+
+```text
++---------------------------------------+
+|                                       |
+|           ✅ Success!                 |
+|                                       |
+|        Order #882 is sent.            |
+|     Kitchen is preparing it now.      |
+|                                       |
+|  -----------------------------------  |
+|  [    Order More    ]  [ Get Bill ]   |
++---------------------------------------+
+
+```
+
+---
+
+### **Technical Summary for Developer**
+
+1. **Frontend:** Use **Vue.js** or **React** (Single Page Application). It feels fast like an app.
+2. **State Management:** Store the `cart` in `localStorage` so if they refresh the page, the coffee is still there.
+3. **Real-time:** Use **Pusher** (or Laravel Reverb) so the "Success" screen appears instantly without the user needing to refresh.

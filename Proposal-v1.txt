@@ -1,0 +1,83 @@
+
+# 📄 Project Proposal: "Coffee-POS SaaS"
+
+### 1. Executive Summary
+
+A cloud-based Point of Sale (POS) system designed specifically for Cambodian coffee shops. It replaces manual paper tickets with a digital ordering system that supports **Counter Service** and **Table Self-Service**. It features automated **KHQR payment verification** via the Bakong Open API, eliminating the need for staff to manually check bank screenshots.
+
+### 2. The "Real-World" Process Flows
+
+#### **Flow A: The "Counter Order" (Walk-in)**
+
+*Use Case: Customer is in a rush and stands at the cashier.*
+
+1. **Order Entry:** Cashier taps "Iced Latte" + "Croissant" on the iPad/PC screen.
+2. **Payment Method:** Cashier asks: "Scan or Cash?"
+* **If Cash:** Cashier takes money  Clicks "Pay with Cash"  System prints Receipt  Kitchen Screen shows "New Order".
+* **If Scan (KHQR):** Customer screen shows dynamic KHQR  Customer scans  **System Auto-Detects Payment (via API)**  Screen turns Green "PAID"  Receipt prints auto  Kitchen Screen shows "New Order".
+
+
+
+#### **Flow B: The "Table Order" (Sit-down)**
+
+*Use Case: Customer sits down, wants to relax, and hates waiting for a waiter.*
+
+1. **Scan:** Customer scans the sticker on **Table #5**.
+2. **Menu Load:** Phone opens `your-app.com/shop/lucky-cafe/table/5`. (No Login required).
+3. **Selection:** Customer adds "Hot Cappuccino" to cart.
+4. **Checkout:**
+* **Option 1 (Pay Now - KHQR):** Customer pays on phone. API verifies. **Kitchen gets ticket: "Table 5 - PAID - Start Making".**
+* **Option 2 (Pay Later - Cash):** Customer clicks "Order with Cash." **Kitchen gets ticket: "Table 5 - UNPAID - Verify First".** Waiter walks over to collect cash or verify the person is real.
+
+
+
+---
+
+### 3. Business Model (How you make money)
+
+Since you "manage all sellers," you are the **Super Admin**.
+
+* **Setup Fee:** $50 (One time) – For setting up their menu, printing QR stickers for tables.
+* **Subscription:** $25/month or $250/year.
+* **Hardware:** You don't sell hardware. They use their own iPad, Android Tablet, or old Laptop.
+
+---
+
+### 4. User Stories (For Development)
+
+We break the system down by **Actors** (Who is doing the action?).
+
+#### **Actor: The Shop Owner (Merchant)**
+
+* **Story 1:** As an Owner, I want to create accounts for my Cashiers and Baristas so I can track who is working.
+* **Story 2:** As an Owner, I want to upload my Menu (Photos, Prices, Categories) so it updates on the customer's phone instantly.
+* **Story 3:** As an Owner, I want to connect my **Personal Bakong Wallet** so money goes directly to me, not the platform admin.
+* **Story 4:** As an Owner, I want to see a "Daily Sales Report" showing Cash vs. KHQR totals.
+
+#### **Actor: The Cashier / Staff**
+
+* **Story 5:** As a Cashier, I want to see a "Live Dashboard" of active tables so I know where to send food.
+* **Story 6:** As a Cashier, I want the system to alert me if a Table Order is "Cash/Unpaid" so I can go collect the money.
+* **Story 7:** As a Barista, I want a "Kitchen View" that just shows the drink name and Table Number (e.g., "2 Iced Lattes - Table 4").
+
+#### **Actor: The Customer (Guest)**
+
+* **Story 8:** As a Customer, I want to scan a QR code and see the menu immediately **without entering my phone number or password**.
+* **Story 9:** As a Customer, I want to pay with ABA/Acleda (KHQR) and get an instant "Success" screen so I know my order is placed.
+
+---
+
+### 5. Technical "Freedom" Implementation (The No-Login Logic)
+
+You mentioned users "don't want to login." Here is how we build that securely:
+
+**The "Signed URL" Strategy**
+When you print the QR code for Table 5, it isn't just `.../table/5`.
+It is a special token: `.../table/5?token=xyz123session`
+
+1. **Session:** When scanned, your server creates a "Guest Session" in the browser.
+2. **Tracking:** You know this user is at Table 5 because of the URL.
+3. **Persistence:** If they close the browser and open it again 5 minutes later, the LocalStorage remembers their active order.
+4. **Reset:** Once the order is "Completed" by the cashier, that session clears, ready for the next customer at Table 5.
+
+---

@@ -1,0 +1,105 @@
+That is a great catch! In a real-world SaaS (Software as a Service), you need a **"God View"** that sits above all the individual coffee shops.
+
+To do this, you add a fourth role: the **Super Admin**. While the "Owner" only sees their own store, **you** (the Super Admin) see the entire platform.
+
+---
+
+### 1. The Super Admin Hierarchy
+
+* **Super Admin (You):** Manage the platform, billing, and global settings.
+* **Owner (Tenant):** Manage one specific shop, products, and their own staff.
+* **Cashier/Barista:** Daily operations within a specific shop.
+
+---
+
+### 2. Super Admin: Real-World Dashboard Features
+
+As the Super Admin, your dashboard should focus on **Business Health** and **Support**:
+
+#### **A. Subscription & Billing Control**
+
+* **Active/Expired Shops:** See a list of which shops have paid their "rent" for the month.
+* **Automatic Cut-off:** If a shop doesn't pay, the system automatically restricts the "Cashier" and "Customer" pages so they can't take orders until they pay you.
+* **Pricing Plans:** Create different tiers (e.g., **Basic** for 1 table, **Pro** for unlimited tables).
+
+#### **B. Shop Management**
+
+* **Onboarding:** You can create a new shop for a client in 30 seconds.
+* **Bakong Config:** Verify that the owner has entered their correct Bakong ID so payments don't get lost.
+* **Login as Owner:** A "Support Mode" where you can temporarily view their dashboard to help them fix a menu mistake or a technical bug.
+
+#### **C. Global Analytics**
+
+* **Total Volume:** See how much money is moving through your entire platform (this helps you know how big your business is growing!).
+* **Usage Stats:** See which shops are the most active.
+
+---
+
+### 3. Database Update for Super Admin
+
+To implement this, you simply add an `is_super_admin` flag to your `users` table or create a separate `super_admins` table.
+
+```sql
+ALTER TABLE users ADD COLUMN is_super_admin BOOLEAN DEFAULT FALSE;
+
+```
+
+**Security Rule:** * If `is_super_admin == true`, the code allows you to bypass the `shop_id` filter and see all rows in the `shops` table.
+
+* If `is_super_admin == false`, the code **must** only show data where `shop_id` matches the user's ID.
+
+---
+
+### 4. Real-World Support Idea: The "System Alert"
+
+If a shop's **Bakong API** starts failing (e.g., they changed their wallet ID incorrectly), the system should send **you** a Telegram alert. You can then call the owner and say, *"Hey, your digital payments are failing, let me help you fix it."* This is how you provide **Premium Service**.
+
+---
+
+
+That is exactly what a **Super Admin (SaaS Admin)** role is for! While the "Owner" manages their coffee shop, you manage the entire platform.
+
+Think of yourself as the **Landlord** and the Coffee Shop Owners as your **Tenants**.
+
+---
+
+### 1. The Super Admin Role (Your Role)
+
+You need a private dashboard that no one else can see. Your main responsibilities in the system are:
+
+* **Shop Onboarding:** Creating the "Shop Entity" and assigning a User as the "Owner."
+* **Subscription Control:** Manually or automatically enabling/disabling a shop based on their payment status.
+* **System Health:** Monitoring if Bakong API tokens are valid and if shops are actually using the system.
+* **Support:** Accessing a shop’s dashboard to help them set up their menu or fix an error.
+
+---
+
+### 2. Real-World Subscription Logic
+
+Since you want them to pay you monthly or yearly, here is how the "SaaS Billing" flow works:
+
+| Step | Action | Logic |
+| --- | --- | --- |
+| **1. The Invoice** | System generates a bill | 5 days before the month ends, the system creates an "Invoice" for the Owner. |
+| **2. The KHQR** | Owner pays YOU | The Owner sees a KHQR in their admin panel. This goes to **Your** Bakong Wallet. |
+| **3. Verification** | API checks your wallet | Just like the coffee orders, the system checks your wallet for the subscription fee. |
+| **4. Access** | Renewal | If paid, `subscription_expires_at` is pushed forward by 30 days. |
+
+---
+
+### 3. Updated User Hierarchy Diagram
+
+* **Level 1: Super Admin (You)** -> Manages `Shops` and `Subscriptions`.
+* **Level 2: Owner (Tenant)** -> Manages `Products`, `Tables`, and `Staff`.
+* **Level 3: Cashier/Barista** -> Manages `Orders` and `Kitchen`.
+
+---
+
+### 4. Subscription "Lock" (The Real-World Enforcement)
+
+In the code, you should have a "Middleware." Before any Shop Owner or Cashier can do anything, the system checks:
+`if (shop->subscription_expires_at < now()) { show_billing_page(); }`
+
+If they haven't paid, the shop effectively "shuts down" digitally. They can see their data, but they can't take new orders until they pay you.
+
+---

@@ -1,0 +1,176 @@
+This is the **Core Engine** of your SaaS. This database schema is designed to handle **Multiple Shops** (Tenancy), **"No-Login" Table Ordering**, and **Bakong Verification** all in one place.
+
+I have optimized this for **MySQL / MariaDB** (standard for Laravel).
+
+### **1. The Strategy: "Session-Based" Ordering**
+
+The most critical part of your "No-Login" idea is the **`table_sessions`** table.
+
+* When a customer scans a QR, the system creates a "Session" linked to that Table.
+* All items they add to the cart go into this Session.
+* Once they pay, the Session is converted into a permanent **Order**, and the table is "freed" for the next guest.
+
+---
+
+### **2. The Database Schema (SQL)**
+
+You can give this directly to your developer or AI agent.
+
+```sql
+-- ==========================================
+-- 1. TENANCY & USERS (The Shops & Staff)
+-- ==========================================
+
+CREATE TABLE shops (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(50) UNIQUE NOT NULL, -- e.g. 'lucky-cafe' for urls
+    owner_name VARCHAR(255),
+    bakong_wallet_id VARCHAR(100) NOT NULL, -- Money goes here!
+    subscription_status ENUM('active', 'expired') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    shop_id BIGINT NOT NULL, -- Belongs to a shop
+    name VARCHAR(255) NOT NULL,
+    pin_code VARCHAR(6), -- Simple login for POS (e.g. 1234)
+    role ENUM('owner', 'cashier', 'barista') DEFAULT 'cashier',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- 2. PHYSICAL STORE (Tables & QR Codes)
+-- ==========================================
+
+CREATE TABLE shop_tables (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    shop_id BIGINT NOT NULL,
+    table_number VARCHAR(10) NOT NULL, -- "T-01", "VIP-2"
+    qr_token VARCHAR(64) UNIQUE NOT NULL, -- The secret string in the QR URL
+    status ENUM('available', 'occupied') DEFAULT 'available',
+    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- 3. THE MENU (Products & Variations)
+-- ==========================================
+
+CREATE TABLE categories (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    shop_id BIGINT NOT NULL,
+    name VARCHAR(100) NOT NULL, -- "Coffee", "Pastry"
+    sort_order INT DEFAULT 0,
+    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE
+);
+
+CREATE TABLE products (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    shop_id BIGINT NOT NULL,
+    category_id BIGINT,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    image_url VARCHAR(500),
+    is_available BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (shop_id) REFERENCES shops(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+);
+
+-- e.g. "Sugar Level: 50%", "Size: Large"
+CREATE TABLE product_variants (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    name VARCHAR(100) NOT NULL, -- "Size"
+    option_name VARCHAR(100) NOT NULL, -- "Large"
+    extra_price DECIMAL(10, 2) DEFAULT 0.00,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- 4. THE MAGIC: GUEST ORDERING (No Login)
+-- ==========================================
+
+CREATE TABLE table_sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    shop_table_id BIGINT NOT NULL,
+    session_token VARCHAR(100) UNIQUE NOT NULL, -- Browser Cookie ID
+    guest_name VARCHAR(50), -- Optional: "Mr. John"
+    status ENUM('active', 'ordering', 'completed') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (shop_table_id) REFERENCES shop_tables(id)
+);
+
+CREATE TABLE cart_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    table_session_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    quantity INT DEFAULT 1,
+    notes VARCHAR(255), -- "No Sugar"
+    FOREIGN KEY (table_session_id) REFERENCES table_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- ==========================================
+-- 5. ORDERS & PAYMENTS (The Money)
+-- ==========================================
+
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    shop_id BIGINT NOT NULL,
+    table_session_id BIGINT, -- Linked to the guest session
+    order_number VARCHAR(20) NOT NULL, -- "ORD-001"
+    total_amount DECIMAL(10, 2) NOT NULL,
+    payment_method ENUM('cash', 'khqr') NOT NULL,
+    payment_status ENUM('pending', 'paid', 'failed') DEFAULT 'pending',
+    fulfillment_status ENUM('queue', 'preparing', 'served') DEFAULT 'queue',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (shop_id) REFERENCES shops(id)
+);
+
+-- The Bakong Verification Record
+CREATE TABLE transactions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    khqr_string TEXT NOT NULL, -- The raw QR generated
+    md5_hash VARCHAR(32) NOT NULL, -- LOWERCASE Hash for API Checking
+    verified_at TIMESTAMP NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+
+```
+
+---
+
+### **3. How the "No-Login" Flow Works with this Schema**
+
+1. **The Scan:**
+* Customer scans Table 5 QR.
+* URL: `v-store.com/s/lucky-cafe/t/xyz_secret_token`
+
+
+2. **The Lookup:**
+* System checks `shop_tables` where `qr_token = 'xyz_secret_token'`.
+* Found: **Table 5 at Lucky Cafe.**
+
+
+3. **The Session:**
+* System creates a row in `table_sessions` (or finds the existing active one).
+* Browser stores `session_token` in a cookie.
+
+
+4. **The Order:**
+* Customer adds coffee. It goes into `cart_items` linked to that `table_session_id`.
+
+
+5. **The Payment:**
+* Customer pays via KHQR.
+* `transactions` table records the `md5_hash`.
+* **Cron Job** checks Bakong API.
+* If PAID: `orders.payment_status`  `'paid'`.
+* **WebSocket Event:** Kitchen screen flashes **"New Order Table 5!"**
+
+
+
+---

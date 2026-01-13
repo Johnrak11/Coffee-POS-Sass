@@ -1,0 +1,317 @@
+<script setup lang="ts">
+import { useAuthStore } from "@/stores/auth";
+import { useThemeStore } from "@/stores/theme";
+import { useRouter, useRoute } from "vue-router";
+
+const authStore = useAuthStore();
+const themeStore = useThemeStore();
+const router = useRouter();
+const route = useRoute();
+
+function logout() {
+  authStore.logoutUser();
+  router.push("/login"); // Back to staff selection
+}
+</script>
+
+<template>
+  <div
+    class="flex h-screen bg-app-bg overflow-hidden transition-colors duration-300"
+  >
+    <!-- Sidebar -->
+    <aside
+      class="flex flex-col bg-app-sidebar border-r border-app-border transition-all duration-300 z-20 shadow-xl"
+      :class="themeStore.isSidebarCollapsed ? 'w-20' : 'w-64'"
+    >
+      <!-- Header -->
+      <div
+        class="p-4 flex items-center justify-between border-b border-app-border"
+      >
+        <div class="flex items-center gap-3 overflow-hidden">
+          <div
+            class="min-w-[40px] w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center font-bold text-xl text-white shadow-lg shadow-orange-900/50"
+          >
+            P
+          </div>
+          <div
+            v-show="!themeStore.isSidebarCollapsed"
+            class="whitespace-nowrap transition-opacity duration-300"
+          >
+            <span class="font-bold text-lg text-app-text">POS System</span>
+          </div>
+        </div>
+
+        <!-- Collapse Button -->
+        <button
+          v-show="!themeStore.isSidebarCollapsed"
+          @click="themeStore.toggleSidebar"
+          class="p-1 text-app-muted hover:text-app-text rounded-lg hover:bg-app-bg transition-colors"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Expand Button (When collapsed) -->
+      <div
+        v-show="themeStore.isSidebarCollapsed"
+        class="w-full flex justify-center py-2"
+      >
+        <button
+          @click="themeStore.toggleSidebar"
+          class="p-2 text-app-muted hover:text-app-text rounded-lg hover:bg-app-bg transition-colors"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 5l7 7-7 7M5 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <nav class="flex-1 p-3 space-y-2">
+        <router-link
+          to="/pos"
+          class="flex items-center gap-3 p-3 rounded-xl transition-colors group relative"
+          :class="[
+            route.path === '/pos'
+              ? 'bg-primary-600/20 text-primary-600 dark:text-primary-400'
+              : 'text-app-muted hover:bg-app-bg hover:text-app-text',
+            themeStore.isSidebarCollapsed ? 'justify-center' : '',
+          ]"
+        >
+          <svg
+            class="w-6 h-6 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 10h16M4 14h16M4 18h16"
+            ></path>
+          </svg>
+          <span
+            v-if="!themeStore.isSidebarCollapsed"
+            class="font-medium whitespace-nowrap"
+            >Register</span
+          >
+          <!-- Tooltip -->
+          <div
+            v-if="themeStore.isSidebarCollapsed"
+            class="absolute left-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
+          >
+            Register
+          </div>
+        </router-link>
+
+        <router-link
+          to="/kitchen"
+          class="flex items-center gap-3 p-3 rounded-xl transition-colors group relative"
+          :class="[
+            route.path === '/kitchen'
+              ? 'bg-primary-600/20 text-primary-600 dark:text-primary-400'
+              : 'text-app-muted hover:bg-app-bg hover:text-app-text',
+            themeStore.isSidebarCollapsed ? 'justify-center' : '',
+          ]"
+        >
+          <svg
+            class="w-6 h-6 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            ></path>
+          </svg>
+          <span
+            v-if="!themeStore.isSidebarCollapsed"
+            class="font-medium whitespace-nowrap"
+            >Kitchen</span
+          >
+          <div
+            v-if="themeStore.isSidebarCollapsed"
+            class="absolute left-full ml-3 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
+          >
+            Kitchen
+          </div>
+        </router-link>
+
+        <router-link
+          to="/pos/orders"
+          class="flex items-center gap-3 p-3 rounded-xl transition-colors group relative"
+          :class="[
+            route.path === '/pos/orders'
+              ? 'bg-primary-600/20 text-primary-600 dark:text-primary-400'
+              : 'text-app-muted hover:bg-app-bg hover:text-app-text',
+            themeStore.isSidebarCollapsed ? 'justify-center' : '',
+          ]"
+        >
+          <svg
+            class="w-6 h-6 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            ></path>
+          </svg>
+          <span
+            v-if="!themeStore.isSidebarCollapsed"
+            class="font-medium whitespace-nowrap"
+            >Orders</span
+          >
+          <div
+            v-if="themeStore.isSidebarCollapsed"
+            class="absolute left-full ml-3 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
+          >
+            Orders
+          </div>
+        </router-link>
+
+        <router-link
+          v-if="authStore.isOwner"
+          to="/admin"
+          class="flex items-center gap-3 p-3 rounded-xl transition-colors group relative"
+          :class="[
+            route.path.startsWith('/admin')
+              ? 'bg-primary-600/20 text-primary-600 dark:text-primary-400'
+              : 'text-app-muted hover:bg-app-bg hover:text-app-text',
+            themeStore.isSidebarCollapsed ? 'justify-center' : '',
+          ]"
+        >
+          <svg
+            class="w-6 h-6 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            ></path>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            ></path>
+          </svg>
+          <span
+            v-if="!themeStore.isSidebarCollapsed"
+            class="font-medium whitespace-nowrap"
+            >Admin</span
+          >
+          <div
+            v-if="themeStore.isSidebarCollapsed"
+            class="absolute left-full ml-3 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
+          >
+            Admin
+          </div>
+        </router-link>
+      </nav>
+
+      <div class="p-4 border-t border-app-border">
+        <!-- Theme Toggle -->
+        <button
+          @click="themeStore.toggleTheme"
+          class="w-full flex items-center gap-3 p-2 mb-2 text-app-muted hover:text-app-text transition-colors"
+          :class="themeStore.isSidebarCollapsed ? 'justify-center' : ''"
+        >
+          <svg
+            v-if="themeStore.isDark"
+            class="w-6 h-6 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+            />
+          </svg>
+          <svg
+            v-else
+            class="w-6 h-6 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+            />
+          </svg>
+          <span v-if="!themeStore.isSidebarCollapsed" class="font-medium">
+            {{ themeStore.isDark ? "Light" : "Dark" }} Mode
+          </span>
+        </button>
+
+        <button
+          @click="logout"
+          class="flex items-center gap-3 text-red-400 hover:text-red-300 w-full p-2"
+          :class="themeStore.isSidebarCollapsed ? 'justify-center' : ''"
+        >
+          <svg
+            class="w-6 h-6 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            ></path>
+          </svg>
+          <span v-if="!themeStore.isSidebarCollapsed" class="hidden lg:block"
+            >Logout</span
+          >
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main
+      class="flex-1 overflow-auto p-4 bg-app-bg transition-colors duration-300"
+    >
+      <router-view />
+    </main>
+  </div>
+</template>

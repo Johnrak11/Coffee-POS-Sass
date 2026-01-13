@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  :root {
+    /* Light Mode Variables */
+    --color-app-bg: #f9fafb;
+    /* gray-50 */
+    --color-sidebar-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-text-main: #111827;
+    /* gray-900 */
+    --color-text-muted: #6b7280;
+    /* gray-500 */
+    --color-border: #f3f4f6;
+    /* gray-100 */
+  }
+
+  .dark {
+    /* Dark Mode Variables */
+    --color-app-bg: #0f0f0f;
+    /* darker than gray-900 */
+    --color-sidebar-bg: #18181b;
+    /* zinc-900 */
+    --color-surface: #1e1e21;
+    /* zinc-850 */
+    --color-text-main: #f9fafb;
+    /* gray-50 */
+    --color-text-muted: #9ca3af;
+    /* gray-400 */
+    --color-border: #27272a;
+    /* zinc-800 */
+  }
+
+  body {
+    @apply bg-app-bg text-app-text font-sans antialiased transition-colors duration-300;
+  }
+
+  /* Smooth scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full hover:bg-gray-400;
+  }
+}
+
+@layer components {
+
+  /* Glass morphism card */
+  .glass-card {
+    @apply bg-white/90 backdrop-blur-xl border border-gray-100 shadow-soft;
+  }
+
+  /* Premium button */
+  .btn-primary {
+    @apply bg-gray-900 text-white px-6 py-3 rounded-xl font-medium shadow-medium hover:shadow-large hover:scale-[1.02] active:scale-[0.98] transition-all duration-200;
+  }
+
+  .product-card {
+    @apply bg-white/90 backdrop-blur-xl border border-gray-100 shadow-soft rounded-2xl overflow-hidden hover:shadow-large hover:-translate-y-1 transition-all duration-300 cursor-pointer;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
