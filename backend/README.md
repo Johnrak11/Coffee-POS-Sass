@@ -1,59 +1,356 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Coffee POS SaaS - Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based API backend for a modern Coffee Shop Point of Sale system with multi-tenant support, product options/modifiers, and real-world cafe ordering features.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+-   🏪 **Multi-tenant Architecture** - Support multiple coffee shops
+-   🛒 **Advanced Product Options** - Size, Sugar, Ice, Toppings customization
+-   📱 **QR Code Ordering** - Guest ordering via QR codes
+-   🧑‍🍳 **Kitchen Display System** - Real-time order management
+-   💳 **Payment Integration** - KHQR (Cambodian QR Payment) support
+-   👥 **Role-based Access** - Super Admin, Shop Admin, Staff, Barista
+-   📊 **Analytics & Reporting** - Sales tracking and insights
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Prerequisites
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+-   PHP >= 8.1
+-   Composer
+-   MySQL >= 5.7 or MariaDB
+-   Node.js & NPM (for Laravel Mix if needed)
 
-## Learning Laravel
+## Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 1. Clone the Repository
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+git clone https://github.com/Johnrak11/Coffee-POS-Sass.git
+cd Coffee-POS-Sass/backend
+```
 
-## Laravel Sponsors
+### 2. Install Dependencies
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+composer install
+```
 
-### Premium Partners
+### 3. Environment Configuration
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Copy the example environment file:
 
-## Contributing
+```bash
+cp .env.example .env
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Configure your `.env` file with your database credentials:
 
-## Code of Conduct
+```env
+APP_NAME="Coffee POS SaaS"
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost:8000
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=coffee_pos_saas
+DB_USERNAME=root
+DB_PASSWORD=
 
-## Security Vulnerabilities
+# Super Admin Credentials (for seeder)
+SUPER_ADMIN_NAME="Super Admin"
+SUPER_ADMIN_EMAIL=admin@example.com
+SUPER_ADMIN_PASSWORD=password
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# KHQR Payment (Optional)
+BAKONG_TOKEN=your_bakong_token_here
+```
+
+### 4. Generate Application Key
+
+```bash
+php artisan key:generate
+```
+
+### 5. Database Setup
+
+Create your database:
+
+```sql
+CREATE DATABASE coffee_pos_saas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+Run migrations:
+
+```bash
+php artisan migrate
+```
+
+Seed the database with sample data:
+
+```bash
+php artisan db:seed
+```
+
+This will create:
+
+-   Super Admin user (credentials from `.env`)
+-   Sample shop "Lucky Cafe"
+-   Sample categories and products
+-   Sample staff users
+-   Sample tables
+
+### 6. Start the Development Server
+
+```bash
+php artisan serve
+```
+
+The API will be available at `http://localhost:8000`
+
+## Default Credentials
+
+### Super Admin
+
+-   Email: `admin@example.com` (or from `.env`)
+-   Password: `password` (or from `.env`)
+
+### Shop Terminal
+
+-   Shop Slug: `lucky-cafe`
+-   Password: `123456`
+
+### Staff Users
+
+-   Cashier: `cashier@luckycafe.com` / `password`
+-   Barista: `barista@luckycafe.com` / `password`
+
+## API Routes
+
+### Guest Routes (No Auth)
+
+-   `POST /api/guest/scan/{qrToken}` - Scan table QR code
+-   `GET /api/guest/menu/{shopSlug}` - Get shop menu
+-   `POST /api/guest/cart/add` - Add item to cart
+-   `POST /api/guest/checkout` - Create order
+
+### Staff Routes (Auth Required)
+
+-   `POST /api/staff/auth` - Staff login
+-   `GET /api/staff/orders` - Get orders
+-   `POST /api/staff/orders` - Create POS order
+-   `GET /api/staff/kitchen/{shopSlug}/orders` - Get kitchen orders
+-   `POST /api/staff/kitchen/orders/{id}/status` - Update order status
+
+### Admin Routes
+
+-   `GET /api/staff/admin/{shopSlug}/menu/products` - List products
+-   `POST /api/staff/admin/{shopSlug}/menu/products` - Create product
+-   `PUT /api/staff/admin/{shopSlug}/menu/products/{id}` - Update product
+-   `DELETE /api/staff/admin/{shopSlug}/menu/products/{id}` - Delete product
+
+See `routes/api.php` for complete route list.
+
+## Configuration
+
+### Adding a New Shop
+
+1. Login as Super Admin
+2. Navigate to Super Admin portal
+3. Click "Add Shop"
+4. Fill in shop details
+5. Set terminal password
+
+### Configuring KHQR Payment
+
+1. Get your Bakong API token
+2. Add to `.env`:
+    ```env
+    BAKONG_TOKEN=your_token_here
+    ```
+3. Update shop settings with merchant info
+
+### Setting Up Product Options
+
+Products can have multiple option groups (Size, Sugar, Ice, etc.):
+
+1. Go to Admin → Products
+2. Create/Edit a product
+3. Click "+ Add Option"
+4. Set:
+    - **Group**: e.g., "Size", "Sugar Level"
+    - **Option**: e.g., "Large", "50%"
+    - **Price**: Extra charge (can be $0)
+5. Save product
+
+Example:
+
+```
+Group: "Size"     Option: "Small"   Price: $0.00
+Group: "Size"     Option: "Medium"  Price: $0.50
+Group: "Size"     Option: "Large"   Price: $1.00
+Group: "Sugar"    Option: "0%"      Price: $0.00
+Group: "Sugar"    Option: "50%"     Price: $0.00
+Group: "Sugar"    Option: "100%"    Price: $0.00
+```
+
+## Troubleshooting
+
+### Issue: "No query results for model"
+
+**Cause**: Route parameters mismatch  
+**Solution**: Ensure controller methods accept parameters in order matching route definition
+
+```php
+// Route: /api/admin/{shopSlug}/products/{productId}
+// Controller must have:
+public function update(Request $request, $shopSlug, $productId)
+```
+
+### Issue: "Add [field] to fillable property"
+
+**Cause**: Mass assignment protection  
+**Solution**: Add field to model's `$fillable` array
+
+```php
+protected $fillable = ['name', 'price', 'category_id'];
+```
+
+### Issue: Database connection refused
+
+**Causes**:
+
+1. MySQL not running
+2. Wrong credentials in `.env`
+3. Database doesn't exist
+
+**Solutions**:
+
+```bash
+# Check MySQL status
+# Windows: Services → MySQL
+# Linux: sudo systemctl status mysql
+
+# Test connection
+mysql -u root -p
+
+# Create database
+CREATE DATABASE coffee_pos_saas;
+```
+
+### Issue: Migrations fail
+
+**Solutions**:
+
+```bash
+# Reset migrations (WARNING: destroys data)
+php artisan migrate:fresh
+
+# With seeding
+php artisan migrate:fresh --seed
+
+# Rollback last migration
+php artisan migrate:rollback
+
+# Check migration status
+php artisan migrate:status
+```
+
+### Issue: 500 Internal Server Error
+
+**Debug Steps**:
+
+1. Check logs: `storage/logs/laravel.log`
+2. Enable debug mode: `APP_DEBUG=true` in `.env`
+3. Check permissions:
+    ```bash
+    chmod -R 775 storage bootstrap/cache
+    ```
+
+### Issue: CORS Errors
+
+**Solution**: Already configured in `config/cors.php`  
+If still issues, verify frontend URL matches:
+
+```php
+'allowed_origins' => ['http://localhost:3000'],
+```
+
+### Issue: Token Mismatch
+
+**Causes**: Sanctum not configured properly  
+**Solution**:
+
+1. Publish Sanctum config:
+    ```bash
+    php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+    ```
+2. Check `config/sanctum.php` stateful domains
+
+## Database Structure
+
+### Key Tables
+
+-   `shops` - Coffee shop tenants
+-   `users` - Super admins and staff
+-   `products` - Menu items
+-   `product_variants` - Product options (Size, Sugar, etc.)
+-   `orders` - Customer orders
+-   `order_items` - Items in orders
+-   `order_item_options` - Selected product options
+-   `cart_items` - Guest cart
+-   `shop_tables` - QR code tables
+-   `table_sessions` - Active guest sessions
+
+## Development
+
+### Running Tests
+
+```bash
+php artisan test
+```
+
+### Clearing Cache
+
+```bash
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+```
+
+### Code Style
+
+This project follows PSR-12 coding standards.
+
+## Production Deployment
+
+1. Set `APP_ENV=production` and `APP_DEBUG=false`
+2. Configure production database
+3. Set secure `APP_KEY`
+4. Configure web server (Nginx/Apache)
+5. Set up SSL certificate
+6. Configure queue workers for background jobs
+7. Set up scheduled tasks (cron jobs)
+
+```bash
+# Generate optimized autoloader
+composer install --optimize-autoloader --no-dev
+
+# Cache configuration
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+## Support
+
+For issues and questions:
+
+-   GitHub Issues: https://github.com/Johnrak11/Coffee-POS-Sass/issues
+-   Email: support@example.com
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Proprietary - All rights reserved
