@@ -20,9 +20,9 @@ class TableSessionService
             return null;
         }
 
-        // Check for active session
+        // Check for active or ordering session
         $activeSession = TableSession::where('shop_table_id', $shopTable->id)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'ordering'])
             ->first();
 
         if ($activeSession) {

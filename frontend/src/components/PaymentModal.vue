@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useAuthStore } from "@/stores/auth";
 
 const props = defineProps<{
   show: boolean;
@@ -7,19 +8,38 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["close", "confirm"]);
+const authStore = useAuthStore();
 
+const currency = ref<"USD" | "KHR">("USD");
 const receivedAmount = ref("");
+
+const exchangeRate = computed(() => {
+  return Number(authStore.shop?.exchange_rate) || 4100;
+});
+
+const totalInCurrency = computed(() => {
+  if (currency.value === "KHR") {
+    // Round to nearest 100 Riel usually, but let's keep exact for now or ceil
+    return Math.ceil((props.total * exchangeRate.value) / 100) * 100;
+  }
+  return props.total;
+});
 
 const change = computed(() => {
   const received = parseFloat(receivedAmount.value);
   if (isNaN(received)) return 0;
-  return received - props.total;
+  return received - totalInCurrency.value;
 });
 
 const isValid = computed(() => {
   const received = parseFloat(receivedAmount.value);
-  return !isNaN(received) && received >= props.total;
+  return !isNaN(received) && received >= totalInCurrency.value;
 });
+
+function toggleCurrency(curr: "USD" | "KHR") {
+  currency.value = curr;
+  receivedAmount.value = ""; // Clear on switch
+}
 
 function appendNumber(num: string) {
   if (num === "." && receivedAmount.value.includes(".")) return;
@@ -32,12 +52,22 @@ function clear() {
 
 function handleConfirm() {
   if (isValid.value) {
-    emit("confirm", parseFloat(receivedAmount.value));
+    emit("confirm", {
+      receivedAmount: parseFloat(receivedAmount.value),
+      currency: currency.value,
+    });
   }
 }
 
 function exactAmount() {
-  receivedAmount.value = Number(props.total).toFixed(2);
+  receivedAmount.value = totalInCurrency.value.toString();
+}
+
+function formatCurrency(amount: number) {
+  if (currency.value === "KHR") {
+    return new Intl.NumberFormat("en-US").format(amount);
+  }
+  return Number(amount).toFixed(2);
 }
 </script>
 
@@ -57,22 +87,54 @@ function exactAmount() {
       class="relative bg-app-surface rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in border border-app-border"
     >
       <div class="bg-gray-900 text-white p-6 text-center">
+        <!-- Currency Toggles -->
+        <div class="flex justify-center gap-2 mb-4">
+          <button
+            @click="toggleCurrency('USD')"
+            :class="[
+              'px-4 py-1.5 rounded-full text-xs font-bold transition-all',
+              currency === 'USD'
+                ? 'bg-white text-gray-900'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700',
+            ]"
+          >
+            USD ($)
+          </button>
+          <button
+            @click="toggleCurrency('KHR')"
+            :class="[
+              'px-4 py-1.5 rounded-full text-xs font-bold transition-all',
+              currency === 'KHR'
+                ? 'bg-white text-gray-900'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700',
+            ]"
+          >
+            KHR (៛)
+          </button>
+        </div>
+
         <h2 class="text-xl font-medium opacity-80 mb-1">Total to Pay</h2>
         <div class="text-4xl font-bold font-display">
-          ${{ Number(totalAmount).toFixed(2) }}
+          {{ currency === "USD" ? "$" : "៛" }}
+          {{ formatCurrency(totalInCurrency) }}
+        </div>
+        <div v-if="currency === 'KHR'" class="text-xs text-gray-400 mt-2">
+          Rate: 1 USD = {{ exchangeRate }} ៛
         </div>
       </div>
 
       <div class="p-6">
         <div class="mb-6">
           <label class="block text-sm font-bold text-app-muted mb-2"
-            >Received Cash ($)</label
+            >Received Cash ({{ currency }})</label
           >
           <div class="flex gap-2">
             <div
               class="flex-1 bg-app-bg rounded-xl p-4 text-2xl font-bold text-right text-app-text border-2 border-transparent focus-within:border-primary-500 transition-colors"
             >
-              {{ receivedAmount || "0.00" }}
+              {{
+                receivedAmount ? formatCurrency(Number(receivedAmount)) : "0"
+              }}
             </div>
             <button
               @click="exactAmount"
@@ -88,9 +150,10 @@ function exactAmount() {
           class="mb-6 p-4 bg-green-50 text-green-700 rounded-xl flex justify-between items-center animate-pulse"
         >
           <span class="font-bold">CHANGE DUE:</span>
-          <span class="text-2xl font-bold"
-            >${{ Number(change).toFixed(2) }}</span
-          >
+          <span class="text-2xl font-bold">
+            {{ currency === "USD" ? "$" : "៛" }}
+            {{ formatCurrency(change) }}
+          </span>
         </div>
 
         <!-- Numpad -->
@@ -105,7 +168,8 @@ function exactAmount() {
           </button>
           <button
             @click="appendNumber('.')"
-            class="h-14 rounded-xl bg-app-bg text-xl text-app-text font-bold hover:bg-gray-200 dark:hover:bg-gray-700 border border-app-border transition-colors"
+            :disabled="currency === 'KHR'"
+            class="h-14 rounded-xl bg-app-bg text-xl text-app-text font-bold hover:bg-gray-200 dark:hover:bg-gray-700 border border-app-border transition-colors disabled:opacity-50"
           >
             .
           </button>

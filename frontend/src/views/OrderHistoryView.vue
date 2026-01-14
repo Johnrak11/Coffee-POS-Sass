@@ -129,11 +129,18 @@ function formatDate(date: string) {
   return new Date(date).toLocaleString();
 }
 
-function formatCurrency(amount: string) {
+function formatAmount(order: any) {
+  if (order.payment_currency === "KHR") {
+    // Calculate total in KHR based on snapshot or default
+    const rate = Number(order.exchange_rate_snapshot) || 4100;
+    const khrTotal = Math.ceil((order.total_amount * rate) / 100) * 100;
+    return new Intl.NumberFormat("en-US").format(khrTotal) + " ៛";
+  }
+  // Default USD
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(Number(amount));
+  }).format(order.total_amount);
 }
 </script>
 
@@ -222,7 +229,7 @@ function formatCurrency(amount: string) {
                 {{ order.payment_method }}
               </td>
               <td class="px-6 py-4 text-right font-bold text-app-text">
-                {{ formatCurrency(order.total_amount) }}
+                {{ formatAmount(order) }}
               </td>
               <td class="px-6 py-4 flex gap-2 justify-center items-center">
                 <button

@@ -40,6 +40,11 @@ const navItems = [
     icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
   },
   {
+    name: "Option Sets",
+    path: "/admin/option-sets",
+    icon: "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4",
+  },
+  {
     name: "Settings",
     path: "/admin/settings",
     icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z",
@@ -66,20 +71,30 @@ const navItems = [
         class="p-4 border-b border-app-border flex items-center justify-between"
       >
         <div class="flex items-center gap-3 overflow-hidden">
+          <img
+            v-if="authStore.shop?.logo_url"
+            :src="authStore.shop.logo_url"
+            class="min-w-[40px] w-10 h-10 rounded-xl object-cover shadow-lg shadow-orange-200/20"
+          />
           <div
+            v-else
             class="min-w-[40px] w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-orange-200/20"
           >
-            A
+            {{ authStore.shop?.name?.[0] || "A" }}
           </div>
           <div
             v-show="!themeStore.isSidebarCollapsed"
             class="whitespace-nowrap transition-opacity duration-300"
           >
-            <h1 class="font-bold text-app-text leading-tight">Admin</h1>
+            <h1
+              class="font-bold text-app-text leading-tight truncate max-w-[140px]"
+            >
+              {{ authStore.shop?.name || "Admin" }}
+            </h1>
             <p
               class="text-[10px] text-app-muted font-medium uppercase tracking-wider truncate max-w-[120px]"
             >
-              {{ authStore.shop?.name }}
+              {{ authStore.user?.role || "Dashboard" }}
             </p>
           </div>
         </div>

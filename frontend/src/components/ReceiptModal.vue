@@ -11,6 +11,7 @@ const props = defineProps<{
     orderNumber: string;
     shopName?: string;
     date?: string;
+    currency?: "USD" | "KHR";
   };
 }>();
 
@@ -19,6 +20,18 @@ const emit = defineEmits(["close", "print"]);
 const formattedDate = computed(() => {
   return props.receiptData.date || new Date().toLocaleString();
 });
+
+const currencySymbol = computed(() => {
+  return props.receiptData.currency === "KHR" ? "៛" : "$";
+});
+
+function formatAmount(amount: number) {
+  if (props.receiptData.currency === "KHR") {
+    // Format Khmer Riel: No decimals, commas separators
+    return new Intl.NumberFormat("en-US").format(amount);
+  }
+  return amount.toFixed(2);
+}
 
 function handlePrint() {
   window.print();
@@ -137,10 +150,14 @@ function handlePrint() {
                       if (item.variant)
                         price += Number(item.variant.extra_price || 0);
                       if (item.options) {
-                        item.options.forEach((opt: any) => {
+                        item.options.forEach((opt) => {
                           price += Number(opt.extra_price || 0);
                         });
                       }
+                      // Keep item prices in USD typically?
+                      // The prompt says "Importace !! for Transaction History and order History must be record ! dispaly amount is khmer or UDS !! base on user pay!"
+                      // But for receipt item breakdown... usually kept in base currency unless everything converts.
+                      // Let's keep item breakdown in USD for clarity, and show Total in Paid Currency.
                       return "$" + (price * item.quantity).toFixed(2);
                     })()
                   }}
@@ -152,22 +169,37 @@ function handlePrint() {
 
         <div class="border-t border-dashed border-gray-300 pt-4 space-y-1">
           <div class="flex justify-between text-base font-bold">
+            <!-- If paid in KHR, we should probably show the KHR total? -->
+            <!-- Or show USD Total and then "Paid in KHR" -->
+            <!-- Let's show the Currency User Paid in for the 'TOTAL' line if possible, or handle conversion display -->
             <span>TOTAL</span>
-            <span>${{ Number(receiptData.total).toFixed(2) }}</span>
+            <span
+              >{{ currencySymbol
+              }}{{
+                receiptData.currency === "KHR"
+                  ? formatAmount(receiptData.cashReceived - receiptData.change) // Total Paid effectively
+                  : formatAmount(receiptData.total)
+              }}</span
+            >
           </div>
           <div
             v-if="receiptData.cashReceived"
             class="flex justify-between text-xs text-gray-600"
           >
             <span>Cash Received</span>
-            <span>${{ Number(receiptData.cashReceived).toFixed(2) }}</span>
+            <span
+              >{{ currencySymbol
+              }}{{ formatAmount(receiptData.cashReceived) }}</span
+            >
           </div>
           <div
             v-if="receiptData.change !== undefined"
             class="flex justify-between text-xs text-gray-600"
           >
             <span>Change</span>
-            <span>${{ Number(receiptData.change).toFixed(2) }}</span>
+            <span
+              >{{ currencySymbol }}{{ formatAmount(receiptData.change) }}</span
+            >
           </div>
         </div>
 

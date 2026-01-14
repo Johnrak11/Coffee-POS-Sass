@@ -93,6 +93,12 @@ Route::prefix('staff')->middleware([\App\Http\Middleware\CheckSubscription::clas
         Route::post('tables', [\App\Http\Controllers\Api\TableManagementController::class, 'store']);
         Route::put('tables/{tableId}', [\App\Http\Controllers\Api\TableManagementController::class, 'update']);
         Route::delete('tables/{tableId}', [\App\Http\Controllers\Api\TableManagementController::class, 'destroy']);
+
+        // Option Sets Management (Custom Presets)
+        Route::get('option-sets', [\App\Http\Controllers\Api\OptionSetController::class, 'index']);
+        Route::post('option-sets', [\App\Http\Controllers\Api\OptionSetController::class, 'store']);
+        Route::put('option-sets/{optionSet}', [\App\Http\Controllers\Api\OptionSetController::class, 'update']);
+        Route::delete('option-sets/{optionSet}', [\App\Http\Controllers\Api\OptionSetController::class, 'destroy']);
     });
 });
 

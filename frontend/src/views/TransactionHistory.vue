@@ -25,24 +25,18 @@ async function fetchTransactions() {
   }
 }
 
-function formatCurrency(val: number) {
+function formatAmount(order: any) {
+  if (order.payment_currency === "KHR") {
+    // Calculate total in KHR based on snapshot or default
+    const rate = Number(order.exchange_rate_snapshot) || 4100;
+    const khrTotal = Math.ceil((order.total_amount * rate) / 100) * 100;
+    return new Intl.NumberFormat("en-US").format(khrTotal) + " ៛";
+  }
+  // Default USD
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(val);
-}
-
-function getStatusBadge(status: string) {
-  switch (status) {
-    case "paid":
-      return "bg-green-100 text-green-700";
-    case "pending":
-      return "bg-yellow-100 text-yellow-700";
-    case "failed":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-gray-100 text-gray-700";
-  }
+  }).format(order.total_amount);
 }
 </script>
 
@@ -53,27 +47,41 @@ function getStatusBadge(status: string) {
       <p class="text-gray-500">View and track all orders across your shop.</p>
     </div>
 
-    <div class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+    <div
+      class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden"
+    >
       <div class="overflow-x-auto">
         <table class="w-full text-left">
           <thead>
             <tr class="bg-gray-50/50 border-b border-gray-100">
-              <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <th
+                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+              >
                 Order ID
               </th>
-              <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <th
+                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+              >
                 Table
               </th>
-              <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <th
+                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+              >
                 Items
               </th>
-              <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <th
+                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+              >
                 Amount
               </th>
-              <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <th
+                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+              >
                 Status
               </th>
-              <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <th
+                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+              >
                 Date
               </th>
             </tr>
@@ -86,7 +94,12 @@ function getStatusBadge(status: string) {
                 </td>
               </tr>
             </template>
-            <tr v-else v-for="order in transactions" :key="order.id" class="hover:bg-gray-50/50 transition-colors">
+            <tr
+              v-else
+              v-for="order in transactions"
+              :key="order.id"
+              class="hover:bg-gray-50/50 transition-colors"
+            >
               <td class="px-6 py-4 font-mono text-sm text-gray-600">
                 {{ order.order_number }}
               </td>
@@ -97,24 +110,31 @@ function getStatusBadge(status: string) {
               </td>
               <td class="px-6 py-4">
                 <div class="flex -space-x-2">
-                  <div v-for="(item, idx) in order.items.slice(0, 3)" :key="idx"
-                    class="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-orange-600">
+                  <div
+                    v-for="(item, idx) in order.items.slice(0, 3)"
+                    :key="idx"
+                    class="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-orange-600"
+                  >
                     {{ item.quantity }}x
                   </div>
-                  <div v-if="order.items.length > 3"
-                    class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-400">
+                  <div
+                    v-if="order.items.length > 3"
+                    class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-400"
+                  >
                     +{{ order.items.length - 3 }}
                   </div>
                 </div>
               </td>
               <td class="px-6 py-4 font-bold text-gray-900">
-                {{ formatCurrency(order.total_amount) }}
+                {{ formatAmount(order) }}
               </td>
               <td class="px-6 py-4">
-                <span :class="[
-                  'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider',
-                  getStatusBadge(order.payment_status),
-                ]">
+                <span
+                  :class="[
+                    'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider',
+                    getStatusBadge(order.payment_status),
+                  ]"
+                >
                   {{ order.payment_status }}
                 </span>
               </td>

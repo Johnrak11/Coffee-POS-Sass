@@ -74,25 +74,45 @@ function initiatePayment(method: "cash" | "khqr") {
   }
 }
 
-async function handlePaymentConfirm(receivedAmount: number) {
+async function handlePaymentConfirm(paymentData: {
+  receivedAmount: number;
+  currency: "USD" | "KHR";
+}) {
   showPaymentModal.value = false;
 
   // Capture data for receipt before clearing order
   const items = [...posStore.currentOrderItems];
   const total = posStore.total;
 
-  const success = await posStore.processPayment(1, "cash");
+  const success = await posStore.processPayment(
+    1,
+    "cash",
+    paymentData.currency,
+    paymentData.receivedAmount
+  );
 
   if (success) {
+    const symbol = paymentData.currency === "USD" ? "$" : "៛";
+    const formattedReceived =
+      paymentData.currency === "USD"
+        ? paymentData.receivedAmount.toFixed(2)
+        : new Intl.NumberFormat("en-US").format(paymentData.receivedAmount);
+
     toast.success("Payment Successful", {
-      description: `Cash received: $${receivedAmount.toFixed(2)}`,
+      description: `Cash received: ${symbol}${formattedReceived}`,
     });
-    // Prepare receipt
+
+    // Calculate change (careful with currency)
+    // For Receipt, we might wants to show the details.
+    // Simplifying: If paid in KHR, we handle change in KHR usually?
+    // Let's pass the raw data to ReceiptModal and let it format.
+
     receiptData.value = {
       items,
       total,
-      cashReceived: receivedAmount,
-      change: receivedAmount - total,
+      cashReceived: paymentData.receivedAmount,
+      change: 0, // Calculated in Modal or Store? Let's just pass raw and handle display there
+      currency: paymentData.currency, // New field for ReceiptModal
       orderNumber: "ORD-" + Math.floor(Math.random() * 10000), // Mock until we get real response
       shopName: authStore.shop?.name || "Lucky Cafe",
     };
@@ -333,7 +353,7 @@ async function handleDirectPayment(method: "khqr") {
                   if (item.variant)
                     price += Number(item.variant.extra_price || 0);
                   if (item.options) {
-                    item.options.forEach((opt: any) => {
+                    item.options.forEach((opt) => {
                       price += Number(opt.extra_price || 0);
                     });
                   }

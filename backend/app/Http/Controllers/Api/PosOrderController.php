@@ -35,6 +35,8 @@ class PosOrderController extends Controller
             'items.*.options.*.option_name' => 'required_with:items.*.options|string',
             'items.*.options.*.extra_price' => 'required_with:items.*.options|numeric|min:0',
             'payment_method' => 'required|in:cash,khqr',
+            'payment_currency' => 'nullable|in:USD,KHR',
+            'received_amount' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -46,7 +48,9 @@ class PosOrderController extends Controller
             $order = $this->orderService->createPosOrder(
                 $validated['shop_id'],
                 $validated['items'],
-                $validated['payment_method']
+                $validated['payment_method'],
+                $validated['payment_currency'] ?? 'USD',
+                $validated['received_amount'] ?? 0
             );
 
             return response()->json([

@@ -94,13 +94,17 @@ export const usePosStore = defineStore("pos", () => {
 
   async function processPayment(
     shopId: number,
-    paymentMethod: "cash" | "khqr"
+    paymentMethod: "cash" | "khqr",
+    paymentCurrency: "USD" | "KHR" = "USD",
+    receivedAmount: number = 0
   ) {
     processingPayment.value = true;
     try {
       const payload = {
         shop_id: shopId,
         payment_method: paymentMethod,
+        payment_currency: paymentCurrency,
+        received_amount: receivedAmount,
         items: currentOrderItems.value.map((item) => {
           const itemData: any = {
             product_id: item.product.id,

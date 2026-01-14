@@ -9,6 +9,7 @@ const staff = ref<any[]>([]);
 const loading = ref(true);
 const showModal = ref(false);
 const editingStaff = ref<any>(null);
+const saving = ref(false);
 
 const form = ref({
   name: "",
@@ -23,9 +24,7 @@ onMounted(async () => {
 async function fetchStaff() {
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
   try {
-    const response = await apiClient.get(
-      `/staff/admin/${shopSlug}/menu/staff`
-    );
+    const response = await apiClient.get(`/staff/admin/${shopSlug}/menu/staff`);
     staff.value = response.data;
   } catch (e) {
     console.error(e);
@@ -48,9 +47,7 @@ function openEditModal(member: any) {
 
 async function handleSubmit() {
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
-  const loadingToast = toast.loading(
-    editingStaff.value ? "Updating staff..." : "Saving staff..."
-  );
+  saving.value = true;
 
   try {
     if (editingStaff.value) {
@@ -59,25 +56,22 @@ async function handleSubmit() {
         form.value
       );
     } else {
-      await apiClient.post(
-        `/staff/admin/${shopSlug}/menu/staff`,
-        form.value
-      );
+      await apiClient.post(`/staff/admin/${shopSlug}/menu/staff`, form.value);
     }
-    toast.dismiss(loadingToast);
     toast.success(
       editingStaff.value ? "Staff updated" : "Staff added successfully"
     );
     await fetchStaff();
     showModal.value = false;
   } catch (e) {
-    toast.dismiss(loadingToast);
     toast.error("Failed to save staff member");
+  } finally {
+    saving.value = false;
   }
 }
 
 async function deleteStaff(id: number) {
-  if (!confirm("Delete this staff member?")) return;
+  if (!confirm("Are you sure you want to remove this staff member?")) return;
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
   const loadingToast = toast.loading("Deleting staff...");
 
@@ -97,107 +91,223 @@ async function deleteStaff(id: number) {
     toast.error("Failed to delete staff member");
   }
 }
+
+function getRoleBadge(role: string) {
+  switch (role) {
+    case "owner":
+      return "bg-purple-100 text-purple-700";
+    case "barista":
+      return "bg-brown-100 text-brown-700";
+    case "cashier":
+      return "bg-green-100 text-green-700";
+    default:
+      return "bg-gray-100 text-gray-700";
+  }
+}
 </script>
 
 <template>
-  <div class="p-8">
-    <div class="mb-8 flex justify-between items-end">
+  <div class="p-6 max-w-7xl mx-auto">
+    <!-- Header -->
+    <div
+      class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+    >
       <div>
-        <h1 class="text-3xl font-bold text-gray-900">Staff Management</h1>
-        <p class="text-gray-500">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          👥 Staff Management
+        </h1>
+        <p class="text-gray-500 mt-1">
           Manage your team members and their shop access.
         </p>
       </div>
-      <button @click="openAddModal"
-        class="px-6 py-3 bg-orange-600 rounded-xl text-sm font-bold text-white shadow-lg shadow-orange-200 hover:bg-orange-500 transition-all active:scale-95">
-        + Add Staff
+      <div>
+        <button
+          @click="openAddModal"
+          class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium shadow-lg shadow-orange-200 transition-colors flex items-center gap-2"
+        >
+          <span>+ New Member</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="flex justify-center py-12">
+      <div
+        class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"
+      ></div>
+    </div>
+
+    <!-- Empty State -->
+    <div
+      v-else-if="staff.length === 0"
+      class="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200"
+    >
+      <div class="text-gray-400 mb-4 text-4xl">👥</div>
+      <h3 class="text-lg font-medium text-gray-600">No staff members found</h3>
+      <p class="text-gray-500 mb-6">Add your first employee to get started.</p>
+      <button
+        @click="openAddModal"
+        class="text-orange-600 font-bold hover:underline"
+      >
+        Add Staff Member
       </button>
     </div>
 
-    <!-- Staff Cards -->
-    <div v-auto-animate class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <template v-if="loading">
-        <div v-for="i in 3" :key="i" class="h-40 bg-white rounded-3xl border border-gray-100 animate-pulse"></div>
-      </template>
-
-      <div v-else v-for="member in staff" :key="member.id"
-        class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-        <div class="flex items-center gap-4 mb-4">
+    <!-- Staff Grid -->
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        v-for="member in staff"
+        :key="member.id"
+        class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow p-5"
+      >
+        <div class="flex items-start gap-4 mb-4">
+          <!-- Avatar -->
           <div
-            class="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center text-xl font-bold">
-            {{ member.name[0] }}
+            class="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 border border-orange-100"
+          >
+            {{ member.name.charAt(0).toUpperCase() }}
           </div>
-          <div>
-            <h3 class="font-bold text-gray-900">{{ member.name }}</h3>
-            <span class="px-2 py-0.5 bg-gray-100 rounded text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-lg text-gray-800 truncate">
+              {{ member.name }}
+            </h3>
+            <span
+              class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-1"
+              :class="getRoleBadge(member.role)"
+            >
               {{ member.role }}
             </span>
           </div>
         </div>
 
-        <div class="space-y-2 mb-4">
-          <div class="flex justify-between text-xs">
-            <span class="text-gray-400">PIN Code:</span>
-            <span class="font-mono font-bold text-gray-600">******</span>
-          </div>
+        <div
+          class="bg-gray-50 rounded-lg p-3 mb-4 flex justify-between items-center"
+        >
+          <span class="text-xs text-gray-500 font-medium uppercase"
+            >Access PIN</span
+          >
+          <span
+            class="font-mono font-bold text-gray-700 tracking-widest text-lg"
+            >******</span
+          >
         </div>
 
+        <!-- Actions -->
         <div class="flex gap-2">
-          <button @click="openEditModal(member)"
-            class="flex-1 py-2 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-blue-50 hover:text-blue-600 transition-colors">
+          <button
+            @click="openEditModal(member)"
+            class="flex-1 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 hover:text-blue-600 transition-colors"
+          >
             Edit
           </button>
-          <button @click="deleteStaff(member.id)"
-            class="px-3 py-2 bg-gray-50 text-red-400 rounded-xl hover:bg-red-50 hover:text-red-600 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button
+            @click="deleteStaff(member.id)"
+            class="px-3 py-1.5 bg-white border border-gray-200 text-gray-400 rounded-lg hover:border-red-200 hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-              </path>
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              ></path>
             </svg>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Modal for Add/Edit -->
-    <div v-if="showModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-[32px] w-full max-w-md p-8 shadow-2xl">
-        <h2 class="text-2xl font-bold mb-6">
-          {{ editingStaff ? "Edit Staff" : "New Staff Member" }}
-        </h2>
+    <!-- Modal -->
+    <div
+      v-if="showModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="absolute inset-0 bg-black/30 backdrop-blur-sm"
+        @click="showModal = false"
+      ></div>
+      <div
+        class="bg-white rounded-2xl shadow-xl w-full max-w-lg relative z-10 overflow-hidden"
+      >
+        <div class="p-6">
+          <h2 class="text-xl font-bold mb-6 text-gray-800">
+            {{ editingStaff ? "Edit Staff Member" : "New Staff Member" }}
+          </h2>
 
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Member Name</label>
-            <input v-model="form.name" type="text"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Role</label>
-            <select v-model="form.role"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none bg-white font-bold">
-              <option value="owner">Owner (Full Admin)</option>
-              <option value="cashier">Cashier (POS + Orders)</option>
-              <option value="barista">Barista (KDS Only)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Login PIN (6 Digits)</label>
-            <input v-model="form.pin" type="text" maxlength="6"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none font-mono tracking-[0.5em] text-center text-lg"
-              placeholder="123456" />
-          </div>
-        </div>
+          <form @submit.prevent="handleSubmit">
+            <!-- Name -->
+            <div class="mb-5">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Full Name</label
+              >
+              <input
+                v-model="form.name"
+                type="text"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                placeholder="e.g. John Doe"
+                required
+              />
+            </div>
 
-        <div class="flex gap-4 mt-8">
-          <button @click="showModal = false"
-            class="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-50 rounded-xl transition-colors">
-            Cancel
-          </button>
-          <button @click="handleSubmit"
-            class="flex-1 py-3 bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-500 transition-colors">
-            Save Member
-          </button>
+            <!-- Role -->
+            <div class="mb-5">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Role</label
+              >
+              <select
+                v-model="form.role"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
+              >
+                <option value="owner">Owner (Full Admin Access)</option>
+                <option value="cashier">Cashier (POS & Orders)</option>
+                <option value="barista">Barista (KDS Display Only)</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">
+                Owners have full access. Cashiers can process orders. Baristas
+                only see the KDS.
+              </p>
+            </div>
+
+            <!-- PIN -->
+            <div class="mb-8">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Login PIN (6 Digits)</label
+              >
+              <input
+                v-model="form.pin"
+                type="text"
+                maxlength="6"
+                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-center text-xl tracking-[0.5em] font-mono"
+                placeholder="123456"
+                required
+              />
+            </div>
+
+            <div class="flex justify-end gap-3 mt-8">
+              <button
+                type="button"
+                @click="showModal = false"
+                class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                :disabled="saving"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="px-6 py-2 bg-orange-600 text-white font-bold rounded-lg shadow-lg shadow-orange-200 hover:bg-orange-500 transition-colors disabled:opacity-50"
+                :disabled="saving"
+              >
+                {{ saving ? "Saving..." : "Save Member" }}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

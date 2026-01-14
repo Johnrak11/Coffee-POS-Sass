@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import type { RouteRecordRaw } from "vue-router";
+import NProgress from "nprogress";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -96,6 +97,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import("../views/CategoryListView.vue"),
       },
       {
+        path: "option-sets",
+        name: "admin-option-sets",
+        component: () => import("../views/OptionSetsView.vue"),
+      },
+      {
         path: "staff",
         name: "admin-staff",
         component: () => import("../views/StaffListView.vue"),
@@ -131,6 +137,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, _from, next) => {
+  NProgress.start();
   const isAuthenticated = localStorage.getItem("staff_token");
   const userRole = localStorage.getItem("staff_role");
 
@@ -148,6 +155,10 @@ router.beforeEach((to, _from, next) => {
   }
 
   next();
+});
+
+router.afterEach(() => {
+  NProgress.done();
 });
 
 export default router;

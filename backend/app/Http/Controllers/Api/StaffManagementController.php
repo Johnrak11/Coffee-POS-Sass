@@ -13,7 +13,13 @@ class StaffManagementController extends Controller
     public function index($shopSlug)
     {
         $shop = Shop::where('slug', $shopSlug)->firstOrFail();
-        $staff = User::where('shop_id', $shop->id)->get();
+        // Exclude super admins from the staff list shown to shop owners
+        $staff = User::where('shop_id', $shop->id)
+            ->where(function ($q) {
+                $q->where('is_super_admin', false)
+                    ->orWhereNull('is_super_admin');
+            })
+            ->get();
 
         return response()->json($staff);
     }
@@ -46,7 +52,7 @@ class StaffManagementController extends Controller
         return response()->json($user, 201);
     }
 
-    public function update(Request $request, $staffId)
+    public function update(Request $request, $shopSlug, $staffId)
     {
         $user = User::findOrFail($staffId);
 
@@ -69,7 +75,7 @@ class StaffManagementController extends Controller
         return response()->json($user);
     }
 
-    public function destroy($staffId)
+    public function destroy($shopSlug, $staffId)
     {
         $user = User::findOrFail($staffId);
 

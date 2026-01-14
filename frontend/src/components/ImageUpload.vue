@@ -139,8 +139,6 @@ function removeImage() {
     <p class="text-xs text-gray-500">
       <span class="font-medium">Recommended:</span> Square image (1:1 ratio),
       max 5MB
-      <br />
-      <span class="text-green-600">✓ Auto-optimized for fast loading</span>
     </p>
   </div>
 </template>

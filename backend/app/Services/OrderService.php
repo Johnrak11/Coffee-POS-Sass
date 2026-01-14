@@ -62,7 +62,7 @@ class OrderService
     /**
      * Create POS order directly (no session)
      */
-    public function createPosOrder(int $shopId, array $items, string $paymentMethod): Order
+    public function createPosOrder(int $shopId, array $items, string $paymentMethod, string $paymentCurrency = 'USD', float $receivedAmount = 0): Order
     {
         if (empty($items)) {
             throw new \Exception('Order items are empty');
@@ -92,6 +92,10 @@ class OrderService
         // Generate order number
         $orderNumber = $this->generateOrderNumber($shopId);
 
+        // Fetch Shop Exchange Rate
+        $shop = Shop::find($shopId);
+        $exchangeRate = $shop ? $shop->exchange_rate : 4100;
+
         // Create order
         $order = Order::create([
             'shop_id' => $shopId,
@@ -99,8 +103,11 @@ class OrderService
             'order_number' => $orderNumber,
             'total_amount' => $total,
             'payment_method' => $paymentMethod,
-            'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending', // Assume cash is paid immediately at POS
+            'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending',
             'fulfillment_status' => 'queue',
+            'payment_currency' => $paymentCurrency,
+            'exchange_rate_snapshot' => $exchangeRate,
+            'received_amount' => $receivedAmount,
         ]);
 
         // Create order items

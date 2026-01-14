@@ -25,6 +25,7 @@ class ShopSettingsController extends Controller
             'phone' => 'nullable|string|max:20',
             'receipt_footer' => 'nullable|string',
             'currency_symbol' => 'sometimes|string|max:10',
+            'exchange_rate' => 'sometimes|numeric|min:0',
             'primary_color' => 'nullable|string|max:7', // Hex color code
             'bakong_account_id' => 'nullable|string|max:100',
             'merchant_name' => 'nullable|string|max:255',
