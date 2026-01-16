@@ -11,11 +11,21 @@ const emit = defineEmits(["close"]);
 const subtotal = computed(() => {
   return (
     props.order?.items.reduce(
-      (sum: number, item: any) => sum + item.subtotal,
+      (sum: number, item: any) => sum + Number(item.subtotal),
       0
     ) || 0
   );
 });
+
+function formatTotal(order: any) {
+  if (order.payment_currency === "KHR") {
+    return new Intl.NumberFormat("en-US").format(order.total_amount) + " ៛";
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(order.total_amount);
+}
 
 function print() {
   window.print();
@@ -67,7 +77,7 @@ function print() {
                 </div>
               </div>
             </div>
-            <div class="font-mono">{{ item.subtotal.toFixed(2) }}</div>
+            <div class="font-mono">{{ Number(item.subtotal).toFixed(2) }}</div>
           </div>
         </div>
 
@@ -80,7 +90,7 @@ function print() {
             class="flex justify-between font-bold text-lg pt-2 border-t border-gray-900"
           >
             <span>Total</span>
-            <span>${{ order.total_amount }}</span>
+            <span>{{ formatTotal(order) }}</span>
           </div>
           <div class="flex justify-between text-xs text-gray-500 pt-1">
             <span>Payment</span>

@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/auth";
 import apiClient from "@/services/api";
 import InvoiceModal from "@/components/InvoiceModal.vue";
 import OrderDetailModal from "@/components/OrderDetailModal.vue";
+import PaymentModal from "@/components/PaymentModal.vue";
 
 const authStore = useAuthStore();
 const loading = ref(false);
@@ -74,6 +75,7 @@ async function fetchOrders(page = 1) {
 }
 
 function viewDetails(order: any) {
+  console.log("Viewing details for order:", order);
   selectedOrder.value = order;
   showDetailsModal.value = true;
 }
@@ -120,9 +122,26 @@ async function updateStatus(order: any, status: string) {
   }
 }
 
+const showPaymentModal = ref(false);
+
+// ... (existing code)
+
+function openPayment(order: any) {
+  selectedOrder.value = order;
+  showPaymentModal.value = true;
+  showDetailsModal.value = false;
+}
+
+function handlePaymentSuccess() {
+  fetchOrders(pagination.value.current_page);
+  showPaymentModal.value = false;
+  showDetailsModal.value = false; // Close details if open
+}
+
 function printOrder(order: any) {
   selectedOrder.value = order;
   showInvoiceModal.value = true;
+  showDetailsModal.value = false;
 }
 
 function formatDate(date: string) {
@@ -131,10 +150,8 @@ function formatDate(date: string) {
 
 function formatAmount(order: any) {
   if (order.payment_currency === "KHR") {
-    // Calculate total in KHR based on snapshot or default
-    const rate = Number(order.exchange_rate_snapshot) || 4100;
-    const khrTotal = Math.ceil((order.total_amount * rate) / 100) * 100;
-    return new Intl.NumberFormat("en-US").format(khrTotal) + " ៛";
+    // Backend stores total_amount in KHR if payment_currency is KHR.
+    return new Intl.NumberFormat("en-US").format(order.total_amount) + " ៛";
   }
   // Default USD
   return new Intl.NumberFormat("en-US", {
@@ -341,6 +358,17 @@ function formatAmount(order: any) {
       :order="selectedOrder"
       @close="showDetailsModal = false"
       @reject="rejectOrder"
+      @print="printOrder"
+      @pay="openPayment"
+    />
+
+    <PaymentModal
+      v-if="showPaymentModal"
+      :show="showPaymentModal"
+      :total="selectedOrder?.total_amount || 0"
+      :existing-order="selectedOrder"
+      @close="showPaymentModal = false"
+      @success="handlePaymentSuccess"
       @print="printOrder"
     />
   </div>

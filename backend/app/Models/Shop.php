@@ -33,6 +33,7 @@ class Shop extends Model
         'merchant_name',
         'merchant_city',
         'theme_mode',
+        'bakong_telegram_chat_id',
     ];
 
     protected $hidden = [

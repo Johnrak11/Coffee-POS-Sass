@@ -128,15 +128,42 @@ export const usePosStore = defineStore("pos", () => {
       const response = await apiClient.post("/staff/orders", payload);
 
       if (response.data.success) {
-        clearOrder();
-        return true;
+        // Only clear cart immediately for direct payments (Cash/Dashboard)
+        // For KHQR, we stick the cart until confirmed or allow "Cancel" to keep data
+        if (paymentMethod !== "khqr") {
+          clearOrder();
+        }
+        return response.data; // Return full data including order & qr_data
       }
-      return false;
+      return null;
     } catch (e) {
       console.error("Payment failed", e);
-      return false;
+      return null;
     } finally {
       processingPayment.value = false;
+    }
+  }
+
+  async function updatePaymentStatus(
+    orderId: number,
+    status: string,
+    options: any = {}
+  ) {
+    loading.value = true;
+    try {
+      const response = await apiClient.put(
+        `/staff/orders/${orderId}/payment-status`,
+        {
+          status,
+          ...options, // e.g., received_amount, payment_method, etc.
+        }
+      );
+      return response.data;
+    } catch (e) {
+      console.error("Update status failed", e);
+      return null;
+    } finally {
+      loading.value = false;
     }
   }
 
@@ -152,5 +179,6 @@ export const usePosStore = defineStore("pos", () => {
     updateQuantity,
     clearOrder,
     processPayment,
+    updatePaymentStatus,
   };
 });

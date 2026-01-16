@@ -76,8 +76,40 @@ class AdminController extends Controller
     {
         $shop = Shop::where('slug', $shopSlug)->firstOrFail();
 
+        // KHQR Batch Check: Check status of recent pending KHQR orders
+        $pendingKhqrOrders = Order::where('shop_id', $shop->id)
+            ->where('payment_status', 'pending')
+            ->whereNotNull('khqr_md5')
+            ->orderBy('created_at', 'DESC')
+            ->limit(10)
+            ->get();
+
+        if ($pendingKhqrOrders->isNotEmpty()) {
+            $md5List = $pendingKhqrOrders->pluck('khqr_md5')->toArray();
+            try {
+                $bakongService = app(\App\Services\BakongService::class);
+                $result = $bakongService->checkStatusBatch($md5List);
+
+                if (isset($result['data']) && is_array($result['data'])) {
+                    foreach ($result['data'] as $tx) {
+                        if (isset($tx['status']) && $tx['status'] === 'SUCCESS' && isset($tx['md5'])) {
+                            Order::where('khqr_md5', $tx['md5'])
+                                ->where('payment_status', 'pending')
+                                ->update([
+                                        'payment_status' => 'paid',
+                                        'payment_metadata' => $tx['data'] ?? null
+                                    ]);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+            }
+        }
+
         $transactions = Order::with(['items.product', 'tableSession.shopTable'])
             ->where('shop_id', $shop->id)
+            ->where('payment_status', '!=', 'pending') // Only completed transactions
             ->orderBy('created_at', 'DESC')
             ->paginate(20);
 

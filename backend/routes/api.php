@@ -34,6 +34,14 @@ Route::prefix('guest')->group(function () {
     Route::get('order/{orderId}/status', [OrderController::class, 'getOrderStatus']);
 });
 
+// KHQR Integration
+Route::prefix('khqr')->group(function () {
+    Route::post('generate', [\App\Http\Controllers\Api\KhqrController::class, 'generate']);
+    Route::post('regenerate', [\App\Http\Controllers\Api\KhqrController::class, 'regenerate']);
+    Route::post('check-status', [\App\Http\Controllers\Api\KhqrController::class, 'checkStatus']);
+    Route::post('check-status-single', [\App\Http\Controllers\Api\KhqrController::class, 'checkStatusSingle']);
+});
+
 // Public Shop Auth (Legacy/Public)
 Route::post('shop/verify', [\App\Http\Controllers\Api\ShopAuthController::class, 'verify']);
 

@@ -26,7 +26,46 @@ const receiptData = ref({
   change: 0,
   orderNumber: "",
   shopName: "Lucky Cafe",
+  currency: "USD" as "USD" | "KHR",
 });
+
+// ...
+
+function handleKhqrSuccess(order: any) {
+  showPaymentModal.value = false;
+
+  if (order) {
+    receiptData.value = {
+      items: order.items || [], // Ensure items are populated in backend response via 'with' relation
+      total: Number(order.total_amount),
+      cashReceived: Number(order.total_amount), // KHQR is exact
+      change: 0,
+      orderNumber: order.order_number,
+      shopName: authStore.shop?.name || "Lucky Cafe",
+      currency: "KHR", // KHQR is always KHR
+    };
+    showReceiptModal.value = true;
+    toast.success("KHQR Payment Confirmed!");
+  }
+}
+
+function handlePrint(order: any) {
+  if (order) {
+    receiptData.value = {
+      items: order.items || [],
+      total: Number(order.total_amount),
+      cashReceived: Number(order.received_amount || order.total_amount),
+      change:
+        Number(order.received_amount || order.total_amount) -
+        Number(order.total_amount),
+      orderNumber: order.order_number,
+      shopName: authStore.shop?.name || "Lucky Cafe",
+      currency: order.payment_currency || "USD",
+    };
+    showReceiptModal.value = true;
+    showPaymentModal.value = false;
+  }
+}
 
 // Computed products list based on selected category
 const displayedProducts = computed(() => {
@@ -66,12 +105,7 @@ function initiatePayment(method: "cash" | "khqr") {
   if (posStore.currentOrderItems.length === 0) return;
 
   selectedPaymentMethod.value = method;
-  if (method === "cash") {
-    showPaymentModal.value = true;
-  } else {
-    // Direct KHQR process for now
-    handleDirectPayment("khqr");
-  }
+  showPaymentModal.value = true;
 }
 
 async function handlePaymentConfirm(paymentData: {
@@ -102,18 +136,13 @@ async function handlePaymentConfirm(paymentData: {
       description: `Cash received: ${symbol}${formattedReceived}`,
     });
 
-    // Calculate change (careful with currency)
-    // For Receipt, we might wants to show the details.
-    // Simplifying: If paid in KHR, we handle change in KHR usually?
-    // Let's pass the raw data to ReceiptModal and let it format.
-
     receiptData.value = {
       items,
       total,
       cashReceived: paymentData.receivedAmount,
-      change: 0, // Calculated in Modal or Store? Let's just pass raw and handle display there
-      currency: paymentData.currency, // New field for ReceiptModal
-      orderNumber: "ORD-" + Math.floor(Math.random() * 10000), // Mock until we get real response
+      change: 0,
+      currency: paymentData.currency,
+      orderNumber: "ORD-" + Math.floor(Math.random() * 10000),
       shopName: authStore.shop?.name || "Lucky Cafe",
     };
     showReceiptModal.value = true;
@@ -145,53 +174,13 @@ function handleCustomizeAdd(data: any) {
   });
 }
 
-async function handleDirectPayment(method: "khqr") {
-  const items = [...posStore.currentOrderItems];
-  const total = posStore.total;
-
-  const success = await posStore.processPayment(1, method);
-
-  if (success) {
-    toast.success("KHQR Payment Received", {
-      description: `Total: $${total.toFixed(2)}`,
-    });
-    receiptData.value = {
-      items,
-      total,
-      cashReceived: total,
-      change: 0,
-      orderNumber: "ORD-" + Math.floor(Math.random() * 10000),
-      shopName: authStore.shop?.name || "Lucky Cafe",
-    };
-    showReceiptModal.value = true;
-  } else {
-    toast.error("KHQR Payment Failed");
-  }
-}
+const modalInitialMethod = computed(() => {
+  return selectedPaymentMethod.value === "cash" ? "DASHBOARD" : "KHQR";
+});
 </script>
 
 <template>
   <div class="flex h-full gap-4 relative">
-    <PaymentModal
-      v-if="showPaymentModal"
-      :total-amount="posStore.total"
-      :is-open="showPaymentModal"
-      @close="showPaymentModal = false"
-      @confirm="handlePaymentConfirm"
-    />
-
-    <ReceiptModal
-      v-if="showReceiptModal"
-      :is-open="showReceiptModal"
-      :order-items="receiptData.items"
-      :total="receiptData.total"
-      :cash-received="receiptData.cashReceived"
-      :change="receiptData.change"
-      :order-number="receiptData.orderNumber"
-      :shop-name="receiptData.shopName"
-      @close="showReceiptModal = false"
-    />
-
     <!-- Left: Menu Grid -->
     <div
       class="flex-1 bg-app-surface rounded-2xl shadow-sm flex flex-col overflow-hidden border border-app-border"
@@ -412,10 +401,14 @@ async function handleDirectPayment(method: "khqr") {
 
     <!-- Modals -->
     <PaymentModal
+      v-if="showPaymentModal"
       :show="showPaymentModal"
       :total="posStore.total"
+      :initial-method="modalInitialMethod"
       @confirm="handlePaymentConfirm"
       @close="showPaymentModal = false"
+      @success="handleKhqrSuccess"
+      @print="handlePrint"
     />
 
     <ReceiptModal

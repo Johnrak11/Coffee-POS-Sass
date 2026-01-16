@@ -263,13 +263,25 @@ function getRoleBadge(role: string) {
               >
               <select
                 v-model="form.role"
-                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white"
+                class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                :disabled="
+                  editingStaff && editingStaff.id === authStore.user?.id
+                "
               >
-                <option value="owner">Owner (Full Admin Access)</option>
+                <!-- Only show Owner option if editing an existing owner -->
+                <option value="owner" v-if="editingStaff?.role === 'owner'">
+                  Owner (Full Admin Access)
+                </option>
                 <option value="cashier">Cashier (POS & Orders)</option>
                 <option value="barista">Barista (KDS Display Only)</option>
               </select>
               <p class="text-xs text-gray-500 mt-1">
+                <span
+                  v-if="editingStaff && editingStaff.id === authStore.user?.id"
+                  class="text-orange-600 font-bold block mb-1"
+                >
+                  You cannot change your own role.
+                </span>
                 Owners have full access. Cashiers can process orders. Baristas
                 only see the KDS.
               </p>

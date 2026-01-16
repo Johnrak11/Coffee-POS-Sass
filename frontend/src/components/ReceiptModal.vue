@@ -30,12 +30,23 @@ function formatAmount(amount: number) {
     // Format Khmer Riel: No decimals, commas separators
     return new Intl.NumberFormat("en-US").format(amount);
   }
-  return amount.toFixed(2);
+  return Number(amount).toFixed(2);
 }
 
 function handlePrint() {
   window.print();
   emit("print");
+}
+
+function calculateItemTotal(item: any) {
+  let price = Number(item.product.price);
+  if (item.variant) price += Number(item.variant.extra_price || 0);
+  if (item.options) {
+    item.options.forEach((opt: any) => {
+      price += Number(opt.extra_price || 0);
+    });
+  }
+  return "$" + (price * item.quantity).toFixed(2);
 }
 </script>
 
@@ -144,23 +155,7 @@ function handlePrint() {
                 </td>
                 <td class="py-2 text-center align-top">{{ item.quantity }}</td>
                 <td class="py-2 text-right align-top">
-                  {{
-                    (() => {
-                      let price = Number(item.product.price);
-                      if (item.variant)
-                        price += Number(item.variant.extra_price || 0);
-                      if (item.options) {
-                        item.options.forEach((opt) => {
-                          price += Number(opt.extra_price || 0);
-                        });
-                      }
-                      // Keep item prices in USD typically?
-                      // The prompt says "Importace !! for Transaction History and order History must be record ! dispaly amount is khmer or UDS !! base on user pay!"
-                      // But for receipt item breakdown... usually kept in base currency unless everything converts.
-                      // Let's keep item breakdown in USD for clarity, and show Total in Paid Currency.
-                      return "$" + (price * item.quantity).toFixed(2);
-                    })()
-                  }}
+                  {{ calculateItemTotal(item) }}
                 </td>
               </tr>
             </tbody>
@@ -204,7 +199,9 @@ function handlePrint() {
         </div>
 
         <div class="mt-8 text-center text-xs">
-          <p>Thank you for visiting {{ shopName || "Lucky Cafe" }}!</p>
+          <p>
+            Thank you for visiting {{ receiptData.shopName || "Lucky Cafe" }}!
+          </p>
           <p class="mt-2">Free WiFi: Lucky-Guest / pwd: 12345678</p>
           <div class="mt-4 border-t pt-2 text-[10px] text-gray-400">
             Powered by Coffee-POS SaaS

@@ -26,6 +26,7 @@ class User extends Authenticatable
         'role', // owner, staff
         'shop_id',
         'is_super_admin',
+        'pin_code',
     ];
 
     /**

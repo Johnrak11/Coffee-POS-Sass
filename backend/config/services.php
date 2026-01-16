@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'bakong' => [
+        'base_url' => env('PAYMENT_BASE_URL', 'https://portfolio.johnrak.online/api/external'),
+        'secret_key' => env('PAYMENT_ACCESS_TOKEN'),
+    ],
+
 ];

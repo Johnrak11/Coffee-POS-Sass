@@ -14,10 +14,17 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'fulfillment_status',
+        'khqr_md5',
+        'khqr_string',
+        'payment_metadata',
+        'payment_currency',
+        'exchange_rate_snapshot',
+        'received_amount',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'payment_metadata' => 'array',
     ];
 
     // Relationships

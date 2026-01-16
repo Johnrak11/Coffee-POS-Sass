@@ -40,11 +40,6 @@ class PosOrderController extends Controller
         ]);
 
         try {
-            // Note: In a real secure app, we should re-fetch prices from DB to avoid client manipulation.
-            // For this MVP, we will trust the prices sent (or we should re-calculate them here).
-            // Let's implement basic re-calculation support later if needed.
-            // The service method we just added trusts the 'price' passed to it.
-
             $order = $this->orderService->createPosOrder(
                 $validated['shop_id'],
                 $validated['items'],
@@ -53,9 +48,35 @@ class PosOrderController extends Controller
                 $validated['received_amount'] ?? 0
             );
 
+            // KHQR Integration: Generate QR immediately if method is KHQR
+            if ($validated['payment_method'] === 'khqr') {
+                $bakongService = app(\App\Services\BakongService::class);
+                $shop = Shop::find($validated['shop_id']);
+
+                $qrResult = $bakongService->generateQr(
+                    (float) $order->total_amount,
+                    $order->payment_currency ?? 'USD',
+                    [
+                        'orderId' => $order->order_number,
+                        'merchant_name' => $shop->merchant_name ?? $shop->name ?? 'Coffee POS',
+                        'merchant_city' => $shop->merchant_city ?? 'Phnom Penh',
+                        'telegram_chat_id' => $shop->bakong_telegram_chat_id,
+                    ]
+                );
+
+                if ($qrResult) {
+                    $order->khqr_md5 = $qrResult['md5'] ?? null;
+                    $order->khqr_string = $qrResult['qr_string'] ?? null;
+                    $order->save();
+
+                    // Attach QR result to response so frontend can display it
+                    $order->qr_data = $qrResult;
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'order' => $order
+                'order' => $order->load(['items.product', 'items.variant', 'items.options'])
             ]);
 
         } catch (\Exception $e) {

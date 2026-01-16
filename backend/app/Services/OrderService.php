@@ -96,6 +96,13 @@ class OrderService
         $shop = Shop::find($shopId);
         $exchangeRate = $shop ? $shop->exchange_rate : 4100;
 
+        // Convert total to KHR if paid in KHR
+        if ($paymentCurrency === 'KHR') {
+            // Calculate KHR total from USD total (value of goods)
+            // Note: Currently $total is in USD (sum of item prices)
+            $total = ceil(($total * $exchangeRate) / 100) * 100;
+        }
+
         // Create order
         $order = Order::create([
             'shop_id' => $shopId,

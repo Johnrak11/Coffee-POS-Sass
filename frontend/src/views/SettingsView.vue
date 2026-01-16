@@ -22,6 +22,7 @@ const form = ref({
   bakong_account_id: "",
   merchant_name: "",
   merchant_city: "",
+  bakong_telegram_chat_id: "",
   theme_mode: "light",
 });
 
@@ -118,7 +119,7 @@ async function saveSettings() {
       v-else
       class="bg-white rounded-[32px] border border-gray-100 shadow-sm p-8 space-y-8"
     >
-      <!-- General Section -->
+      <!-- General Profile Section -->
       <div>
         <h3
           class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2"
@@ -126,27 +127,65 @@ async function saveSettings() {
           <span class="w-1.5 h-6 bg-orange-600 rounded-full"></span>
           General Profile
         </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Shop Name</label
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Logo Col -->
+          <div
+            class="flex flex-col items-center justify-start p-6 bg-gray-50 rounded-3xl border border-gray-100"
+          >
+            <label
+              class="block text-xs font-bold text-gray-400 uppercase mb-4 self-start"
+              >Shop Logo</label
             >
-            <input
-              v-model="form.name"
-              type="text"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
+            <ImageUpload
+              v-model="form.logo_url"
+              folder="logos"
+              @fileSelected="pendingLogoFile = $event"
             />
+            <p class="text-xs text-gray-400 mt-4 text-center">
+              Recommended: 800x800px or square image.
+            </p>
           </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Phone Number</label
-            >
-            <input
-              v-model="form.phone"
-              type="text"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
-            />
+
+          <!-- Fields Col -->
+          <div class="space-y-6">
+            <div>
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase mb-2"
+                >Shop Name</label
+              >
+              <input
+                v-model="form.name"
+                type="text"
+                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-shadow"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase mb-2"
+                >Phone Number</label
+              >
+              <input
+                v-model="form.phone"
+                type="text"
+                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-shadow"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-bold text-gray-400 uppercase mb-2"
+                >Address</label
+              >
+              <textarea
+                v-model="form.address"
+                rows="3"
+                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-shadow"
+              ></textarea>
+            </div>
           </div>
+        </div>
+
+        <!-- Exchange Rate (Now separate row inside General or just below) -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
               >Exchange Rate (1 USD = ? KHR)</label
@@ -156,7 +195,7 @@ async function saveSettings() {
                 v-model="form.exchange_rate"
                 type="number"
                 min="0"
-                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
+                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-shadow"
                 placeholder="4100"
               />
               <div
@@ -168,92 +207,6 @@ async function saveSettings() {
             <p class="text-xs text-gray-400 mt-2">
               Used for cash payments in Khmer Riel.
             </p>
-          </div>
-          <div class="md:col-span-2">
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Address</label
-            >
-            <textarea
-              v-model="form.address"
-              rows="2"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
-            ></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- Receipt Section -->
-      <div class="pt-8 border-t border-gray-50">
-        <h3
-          class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2"
-        >
-          <span class="w-1.5 h-6 bg-orange-600 rounded-full"></span>
-          Receipt Customization
-        </h3>
-        <div>
-          <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-            >Footer Message</label
-          >
-          <textarea
-            v-model="form.receipt_footer"
-            rows="2"
-            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
-            placeholder="Thank you for visiting!"
-          ></textarea>
-        </div>
-      </div>
-
-      <!-- Branding & Theme -->
-      <div class="pt-8 border-t border-gray-50">
-        <h3
-          class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2"
-        >
-          <span class="w-1.5 h-6 bg-orange-600 rounded-full"></span>
-          Branding & Theme
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Theme Mode -->
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Theme Mode</label
-            >
-            <div class="flex gap-3">
-              <button
-                type="button"
-                @click="form.theme_mode = 'light'"
-                :class="[
-                  'flex-1 py-3 px-4 rounded-xl font-semibold transition-all',
-                  form.theme_mode === 'light'
-                    ? 'bg-orange-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-                ]"
-              >
-                ☀️ Light
-              </button>
-              <button
-                type="button"
-                @click="form.theme_mode = 'dark'"
-                :class="[
-                  'flex-1 py-3 px-4 rounded-xl font-semibold transition-all',
-                  form.theme_mode === 'dark'
-                    ? 'bg-gray-900 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-                ]"
-              >
-                🌙 Dark
-              </button>
-            </div>
-          </div>
-          <!-- Logo Avatar -->
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Shop Logo</label
-            >
-            <ImageUpload
-              v-model="form.logo_url"
-              folder="logos"
-              @fileSelected="pendingLogoFile = $event"
-            />
           </div>
         </div>
       </div>
@@ -298,6 +251,17 @@ async function saveSettings() {
               type="text"
               class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
               placeholder="Phnom Penh"
+            />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
+              >Telegram Chat ID (Optional)</label
+            >
+            <input
+              v-model="form.bakong_telegram_chat_id"
+              type="text"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
+              placeholder="Enter Telegram Chat ID for notifications"
             />
           </div>
         </div>

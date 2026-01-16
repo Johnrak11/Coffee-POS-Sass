@@ -30,6 +30,7 @@ class ShopSettingsController extends Controller
             'bakong_account_id' => 'nullable|string|max:100',
             'merchant_name' => 'nullable|string|max:255',
             'merchant_city' => 'nullable|string|max:100',
+            'bakong_telegram_chat_id' => 'nullable|string|max:100',
             'theme_mode' => 'nullable|in:light,dark',
         ]);
 

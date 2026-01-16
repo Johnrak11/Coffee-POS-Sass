@@ -46,7 +46,7 @@ class StaffManagementController extends Controller
             'shop_id' => $shop->id,
             'name' => $validated['name'],
             'role' => $validated['role'],
-            'pin' => $validated['pin'], // Note: In a real app we might hash this, but we use it for direct PIN matching
+            'pin_code' => $validated['pin'], // Map 'pin' input to 'pin_code' column
         ]);
 
         return response()->json($user, 201);
@@ -68,6 +68,12 @@ class StaffManagementController extends Controller
                 'success' => false,
                 'message' => 'Cannot promote staff to owner role.'
             ], 403);
+        }
+
+        // Map pin to pin_code for update
+        if (isset($validated['pin'])) {
+            $validated['pin_code'] = $validated['pin'];
+            unset($validated['pin']);
         }
 
         $user->update($validated);
