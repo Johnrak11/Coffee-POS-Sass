@@ -250,8 +250,10 @@ function formatCurrency(val: number) {
 </script>
 
 <template>
-  <div class="p-8 bg-bg-secondary dark:bg-gray-900 min-h-screen">
-    <div class="mb-8 flex justify-between items-end">
+  <div
+    class="h-full flex flex-col p-6 bg-bg-secondary dark:bg-gray-900 overflow-hidden"
+  >
+    <div class="mb-6 flex justify-between items-end">
       <div>
         <h1 class="text-3xl font-bold text-text-primary dark:text-white">
           {{ t("nav.products") || "Products" }}
@@ -272,12 +274,12 @@ function formatCurrency(val: number) {
           v-model="searchQuery"
           type="text"
           placeholder="Search products..."
-          class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+          class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
         />
       </div>
       <select
         v-model="selectedCategory"
-        class="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+        class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
       >
         <option value="all">All Categories</option>
         <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -286,7 +288,7 @@ function formatCurrency(val: number) {
       </select>
       <select
         v-model="selectedStatus"
-        class="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+        class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
       >
         <option value="all">All Status</option>
         <option value="available">Available</option>
@@ -295,41 +297,23 @@ function formatCurrency(val: number) {
     </div>
 
     <!-- Products Table -->
-    <BaseCard padding="none" shadow="md" rounded="xl">
-      <div class="overflow-x-auto">
+    <div
+      class="flex-1 bg-app-surface rounded-2xl border border-app-border overflow-hidden flex flex-col transition-colors duration-300"
+    >
+      <div class="overflow-x-auto flex-1">
         <table class="w-full">
           <thead
-            class="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700"
+            class="bg-app-bg text-app-muted text-xs uppercase font-bold sticky top-0 border-b border-app-border"
           >
             <tr>
-              <th
-                class="text-left p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Product
-              </th>
-              <th
-                class="text-left p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Category
-              </th>
-              <th
-                class="text-left p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Price
-              </th>
-              <th
-                class="text-left p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Status
-              </th>
-              <th
-                class="text-right p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"
-              >
-                Actions
-              </th>
+              <th class="text-left px-4 py-3">Product</th>
+              <th class="text-left px-4 py-3">Category</th>
+              <th class="text-left px-4 py-3">Price</th>
+              <th class="text-left px-4 py-3">Status</th>
+              <th class="text-right px-4 py-3">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+          <tbody class="divide-y divide-app-border">
             <tr v-if="loading">
               <td colspan="5" class="p-8 text-center">
                 <div class="flex justify-center">
@@ -341,9 +325,7 @@ function formatCurrency(val: number) {
             </tr>
             <tr v-else-if="products.data.length === 0">
               <td colspan="5" class="p-12 text-center">
-                <div class="text-gray-400 dark:text-gray-500 mb-2">
-                  No products found
-                </div>
+                <div class="text-app-muted mb-2">No products found</div>
                 <BaseButton variant="primary" size="sm" @click="openAddModal"
                   >Add your first product</BaseButton
                 >
@@ -352,7 +334,7 @@ function formatCurrency(val: number) {
             <tr
               v-for="product in products.data"
               :key="product.id"
-              class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              class="hover:bg-app-bg transition-colors"
             >
               <td class="p-4">
                 <div class="flex items-center gap-3">
@@ -485,7 +467,7 @@ function formatCurrency(val: number) {
           </BaseButton>
         </div>
       </div>
-    </BaseCard>
+    </div>
 
     <!-- Add/Edit Modal -->
     <div

@@ -37,7 +37,7 @@ watch(
     pagination.value.current_page = 1; // Reset page on filter change
     fetchOrders();
   },
-  { deep: true }
+  { deep: true },
 );
 
 async function fetchOrders(page = 1) {
@@ -96,7 +96,7 @@ async function updateStatus(order: any, status: string) {
       `/staff/orders/${order.id}/payment-status`,
       {
         status: status,
-      }
+      },
     );
 
     // Refresh list
@@ -200,6 +200,7 @@ function formatAmount(order: any) {
             <tr>
               <th class="px-6 py-4">Order #</th>
               <th class="px-6 py-4">Date</th>
+              <th class="px-6 py-4">Processed By</th>
               <th class="px-6 py-4">Status</th>
               <th class="px-6 py-4">Payment</th>
               <th class="px-6 py-4 text-right">Total</th>
@@ -229,14 +230,42 @@ function formatAmount(order: any) {
                 {{ formatDate(order.created_at) }}
               </td>
               <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <div
+                    v-if="order.user"
+                    class="flex items-center gap-2 px-2 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 border border-primary-100 dark:border-primary-800"
+                  >
+                    <span class="text-xs font-bold uppercase">Staff</span>
+                    <span class="text-sm font-medium">{{
+                      order.user.name
+                    }}</span>
+                  </div>
+                  <div
+                    v-else-if="order.table_session?.shop_table"
+                    class="flex items-center gap-2 px-2 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border border-orange-100 dark:border-orange-800"
+                  >
+                    <span class="text-xs font-bold uppercase">Table</span>
+                    <span class="text-sm font-medium">{{
+                      order.table_session.shop_table.name
+                    }}</span>
+                  </div>
+                  <div
+                    v-else
+                    class="flex items-center gap-2 px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
+                  >
+                    <span class="text-xs font-bold uppercase">Guest</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
                 <span
                   :class="[
                     'px-2 py-1 rounded text-xs font-bold uppercase',
                     order.payment_status === 'paid'
                       ? 'bg-green-500/20 text-green-400'
                       : order.payment_status === 'pending'
-                      ? 'bg-orange-500/20 text-orange-400'
-                      : 'bg-red-500/20 text-red-400',
+                        ? 'bg-orange-500/20 text-orange-400'
+                        : 'bg-red-500/20 text-red-400',
                   ]"
                 >
                   {{ order.payment_status }}

@@ -110,8 +110,35 @@ class AdminController extends Controller
         $transactions = \App\Models\Transaction::with(['order.items.product', 'order.tableSession.shopTable'])
             ->whereHas('order', function ($query) use ($shop) {
                 $query->where('shop_id', $shop->id);
-            })
-            ->orderBy('created_at', 'DESC')
+            });
+
+        // Filter by Order Number
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $transactions->whereHas('order', function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by Status
+        if ($request->has('status') && $request->status) {
+            $status = $request->status;
+            if ($status === 'verified') {
+                $transactions->where(function ($q) {
+                    $q->whereNotNull('verified_at')
+                        ->orWhereHas('order', function ($subQ) {
+                            $subQ->where('payment_status', 'paid');
+                        });
+                });
+            } elseif ($status === 'failed') {
+                $transactions->whereNull('verified_at')
+                    ->whereHas('order', function ($subQ) {
+                        $subQ->where('payment_status', '!=', 'paid');
+                    });
+            }
+        }
+
+        $transactions = $transactions->orderBy('created_at', 'DESC')
             ->paginate(20);
 
         return response()->json($transactions);

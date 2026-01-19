@@ -45,7 +45,8 @@ class PosOrderController extends Controller
                 $validated['items'],
                 $validated['payment_method'],
                 $validated['payment_currency'] ?? 'USD',
-                $validated['received_amount'] ?? 0
+                $validated['received_amount'] ?? 0,
+                auth()->id()
             );
 
             // KHQR Integration: Generate QR immediately if method is KHQR

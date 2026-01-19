@@ -25,7 +25,8 @@
         "page": "page",
         "of": "of",
         "previous": "Previous",
-        "next": "Next"
+        "next": "Next",
+        "allStatus": "All Status"
     },
     "nav": {
         "dashboard": "Dashboard",
@@ -92,7 +93,8 @@
         "verified": "Verified",
         "showInfo": "Show Info",
         "hideInfo": "Hide Info",
-        "fullString": "Full String"
+        "fullString": "Full String",
+        "failed": "Failed"
     },
     "settings": {
         "settings": "Settings",

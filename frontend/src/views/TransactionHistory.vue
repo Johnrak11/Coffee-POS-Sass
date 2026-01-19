@@ -1,20 +1,39 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import debounce from "lodash/debounce";
 import apiClient from "@/api";
 import { useAuthStore } from "@/stores/auth";
+import { useUIStore } from "@/stores/ui";
 import { BaseButton, BaseCard } from "@/components/common";
 import PaymentModal from "@/components/PaymentModal.vue";
 import ReceiptModal from "@/components/ReceiptModal.vue";
 
 const { t } = useI18n();
 const authStore = useAuthStore();
+const uiStore = useUIStore();
 const transactions = ref<any[]>([]);
 const loading = ref(true);
 const pagination = ref({
   current_page: 1,
   last_page: 1,
   total: 0,
+});
+
+// Filters
+const searchQuery = ref("");
+const selectedStatus = ref("all");
+
+// Watchers
+watch(
+  searchQuery,
+  debounce(() => {
+    fetchTransactions(1);
+  }, 300),
+);
+
+watch(selectedStatus, () => {
+  fetchTransactions(1);
 });
 
 // Modal State
@@ -34,7 +53,7 @@ async function fetchTransactions(page = 1) {
     loading.value = true;
     const shopSlug = authStore.shop?.slug || "lucky-cafe";
     const response = await apiClient.get(
-      `/staff/admin/${shopSlug}/transactions?page=${page}`
+      `/staff/admin/${shopSlug}/transactions?page=${page}&search=${searchQuery.value}&status=${selectedStatus.value}`,
     );
 
     const data = response.data;
@@ -83,10 +102,17 @@ function handlePrint(order: any) {
   };
   showReceiptModal.value = true;
 }
+
+function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text);
+  uiStore.showToast("success", "MD5 copied to clipboard");
+}
 </script>
 
 <template>
-  <div class="p-8 bg-bg-secondary dark:bg-gray-900 min-h-screen">
+  <div
+    class="h-full flex flex-col p-6 bg-bg-secondary dark:bg-gray-900 overflow-hidden"
+  >
     <!-- Header -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-text-primary dark:text-white">
@@ -100,43 +126,63 @@ function handlePrint(order: any) {
       </p>
     </div>
 
+    <!-- Filters -->
+    <div class="mb-6 flex flex-wrap gap-4">
+      <div class="flex-1 min-w-[300px]">
+        <input
+          v-model="searchQuery"
+          type="text"
+          :placeholder="t('common.search') || 'Search Order #...'"
+          class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+        />
+      </div>
+      <select
+        v-model="selectedStatus"
+        class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+      >
+        <option value="all">
+          {{ t("common.allStatus") || "All Status" }}
+        </option>
+        <option value="verified">
+          {{ t("transaction.verified") || "Verified" }}
+        </option>
+        <option value="failed">
+          {{ t("transaction.failed") || "Failed" }}
+        </option>
+      </select>
+    </div>
+
     <!-- Transactions Table Card -->
-    <BaseCard padding="none" shadow="md" rounded="2xl">
-      <div class="overflow-x-auto">
+    <div
+      class="flex-1 bg-app-surface rounded-2xl border border-app-border overflow-hidden flex flex-col transition-colors duration-300"
+    >
+      <div class="overflow-auto flex-1 custom-scrollbar">
         <table class="w-full text-left">
-          <thead>
-            <tr
-              class="bg-gray-50/50 dark:bg-gray-800 border-b border-border-primary dark:border-gray-700"
-            >
-              <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
-              >
+          <thead
+            class="bg-app-bg text-app-muted text-xs uppercase font-bold sticky top-0 border-b border-app-border"
+          >
+            <tr>
+              <th class="px-6 py-4">
                 {{ t("order.orderNumber") }} / {{ t("transaction.method") }}
               </th>
-              <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
-              >
+              <th class="px-6 py-4">
                 {{ t("order.items") }}
               </th>
-              <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
-              >
+              <th class="px-6 py-4">
                 {{ t("transaction.amount") }}
               </th>
-              <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
-              >
+              <th class="px-6 py-4">Received</th>
+              <th class="px-6 py-4">Transaction ID</th>
+              <th class="px-6 py-4">
                 {{ t("transaction.status") }}
               </th>
-              <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
-              >
+              <th class="px-6 py-4">MD5</th>
+              <th class="px-6 py-4">
                 {{ t("transaction.date") }}
               </th>
-              <th class="px-6 py-4"></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50 dark:divide-gray-800">
+          <tbody class="divide-y divide-app-border">
             <!-- Loading State -->
             <template v-if="loading">
               <tr v-for="i in 5" :key="i" class="animate-pulse">
@@ -149,10 +195,9 @@ function handlePrint(order: any) {
             </template>
 
             <!-- Transaction Rows -->
+            <!-- eslint-disable-next-line vue/no-v-for-template-key -->
             <template v-else v-for="tx in transactions" :key="tx.id">
-              <tr
-                class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
-              >
+              <tr class="hover:bg-app-bg transition-colors">
                 <td class="px-6 py-4">
                   <div
                     class="font-mono text-sm text-gray-600 dark:text-gray-300 font-bold"
@@ -168,17 +213,6 @@ function handlePrint(order: any) {
                     "
                   >
                     {{ tx.payment_method }}
-                  </div>
-                  <div
-                    v-if="
-                      tx.md5_hash &&
-                      tx.md5_hash !== 'N/A' &&
-                      !tx.md5_hash.startsWith('CASH')
-                    "
-                    class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 font-mono truncate max-w-[120px]"
-                    title="MD5 Hash"
-                  >
-                    MD5: {{ tx.md5_hash.substring(0, 8) }}...
                   </div>
                 </td>
                 <td class="px-6 py-4">
@@ -202,7 +236,7 @@ function handlePrint(order: any) {
                   {{
                     tx.currency === "KHR"
                       ? new Intl.NumberFormat("en-US").format(
-                          Number(tx.amount)
+                          Number(tx.amount),
                         ) + " ៛"
                       : new Intl.NumberFormat("en-US", {
                           style: "currency",
@@ -210,21 +244,56 @@ function handlePrint(order: any) {
                         }).format(tx.amount)
                   }}
                 </td>
+                <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">
+                  {{
+                    tx.order?.received_amount
+                      ? tx.currency === "KHR"
+                        ? new Intl.NumberFormat("en-US").format(
+                            Number(tx.order.received_amount),
+                          ) + " ៛"
+                        : new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                          }).format(tx.order.received_amount)
+                      : "-"
+                  }}
+                </td>
+                <td
+                  class="px-6 py-4 text-xs font-mono text-gray-500 max-w-[150px] truncate"
+                  title="Transaction ID"
+                >
+                  {{ tx.order?.payment_metadata?.hash || "-" }}
+                </td>
                 <td class="px-6 py-4">
                   <span
                     :class="[
                       'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider',
-                      tx.verified_at
+                      tx.verified_at || tx.order?.payment_status === 'paid'
                         ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400'
-                        : 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400',
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
                     ]"
                   >
                     {{
-                      tx.verified_at
+                      tx.verified_at || tx.order?.payment_status === "paid"
                         ? t("transaction.verified")
-                        : t("order.pending")
+                        : "Failed"
                     }}
                   </span>
+                </td>
+                <td class="px-6 py-4">
+                  <div
+                    v-if="
+                      tx.md5_hash &&
+                      tx.md5_hash !== 'N/A' &&
+                      !tx.md5_hash.startsWith('CASH')
+                    "
+                    class="text-[10px] text-gray-400 dark:text-gray-500 font-mono truncate max-w-[100px] cursor-pointer hover:text-primary-500"
+                    title="Click to Copy MD5"
+                    @click="copyToClipboard(tx.md5_hash)"
+                  >
+                    {{ tx.md5_hash.substring(0, 8) }}...
+                  </div>
+                  <span v-else></span>
                 </td>
                 <td class="px-6 py-4">
                   <p class="text-sm text-gray-900 dark:text-gray-200">
@@ -235,26 +304,6 @@ function handlePrint(order: any) {
                   >
                     {{ new Date(tx.created_at).toLocaleTimeString() }}
                   </p>
-                </td>
-                <td class="px-6 py-4 text-right space-x-2">
-                  <button
-                    @click="tx.expanded = !tx.expanded"
-                    class="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-                  >
-                    {{
-                      tx.expanded
-                        ? t("transaction.hideInfo")
-                        : t("transaction.showInfo")
-                    }}
-                  </button>
-                  <BaseButton
-                    v-if="!tx.verified_at && tx.order"
-                    @click="openPayment(tx.order)"
-                    variant="primary"
-                    size="sm"
-                  >
-                    {{ t("order.payment") }}
-                  </BaseButton>
                 </td>
               </tr>
 
@@ -282,35 +331,35 @@ function handlePrint(order: any) {
           </tbody>
         </table>
       </div>
-    </BaseCard>
 
-    <!-- Pagination -->
-    <div
-      class="mt-6 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400"
-      v-if="pagination.last_page > 1"
-    >
-      <div>
-        {{ t("common.showing") || "Showing" }} {{ t("common.page") || "page" }}
-        {{ pagination.current_page }} {{ t("common.of") || "of" }}
-        {{ pagination.last_page }}
-      </div>
-      <div class="flex gap-2">
-        <BaseButton
-          @click="fetchTransactions(pagination.current_page - 1)"
-          :disabled="pagination.current_page <= 1"
-          variant="secondary"
-          size="sm"
-        >
-          {{ t("common.previous") || "Previous" }}
-        </BaseButton>
-        <BaseButton
-          @click="fetchTransactions(pagination.current_page + 1)"
-          :disabled="pagination.current_page >= pagination.last_page"
-          variant="secondary"
-          size="sm"
-        >
-          {{ t("common.next") || "Next" }}
-        </BaseButton>
+      <!-- Pagination -->
+      <div
+        class="border-t border-app-border p-4 flex justify-between items-center"
+      >
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          {{ t("common.showing") || "Showing" }}
+          {{ t("common.page") || "page" }} {{ pagination.current_page }}
+          {{ t("common.of") || "of" }}
+          {{ pagination.last_page }}
+        </div>
+        <div class="flex gap-2">
+          <BaseButton
+            @click="fetchTransactions(pagination.current_page - 1)"
+            :disabled="pagination.current_page <= 1"
+            variant="secondary"
+            size="sm"
+          >
+            {{ t("common.previous") || "Previous" }}
+          </BaseButton>
+          <BaseButton
+            @click="fetchTransactions(pagination.current_page + 1)"
+            :disabled="pagination.current_page >= pagination.last_page"
+            variant="secondary"
+            size="sm"
+          >
+            {{ t("common.next") || "Next" }}
+          </BaseButton>
+        </div>
       </div>
     </div>
 

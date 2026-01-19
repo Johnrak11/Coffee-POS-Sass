@@ -62,7 +62,7 @@ class OrderService
     /**
      * Create POS order directly (no session)
      */
-    public function createPosOrder(int $shopId, array $items, string $paymentMethod, string $paymentCurrency = 'USD', float $receivedAmount = 0): Order
+    public function createPosOrder(int $shopId, array $items, string $paymentMethod, string $paymentCurrency = 'USD', float $receivedAmount = 0, ?int $userId = null): Order
     {
         if (empty($items)) {
             throw new \Exception('Order items are empty');
@@ -115,6 +115,7 @@ class OrderService
             'payment_currency' => $paymentCurrency,
             'exchange_rate_snapshot' => $exchangeRate,
             'received_amount' => $receivedAmount,
+            'user_id' => $userId,
         ]);
 
         // Create order items
@@ -199,7 +200,7 @@ class OrderService
      */
     public function getOrders(int $shopId, array $filters = [], int $perPage = 15)
     {
-        $query = Order::with(['items.product', 'items.variant', 'items.options', 'tableSession.shopTable'])
+        $query = Order::with(['items.product', 'items.variant', 'items.options', 'tableSession.shopTable', 'user'])
             ->where('shop_id', $shopId);
 
         // Filter by Date
