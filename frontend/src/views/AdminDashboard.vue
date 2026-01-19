@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import apiClient from "@/services/api";
+import { useI18n } from "vue-i18n";
+import apiClient from "@/api";
 import { useAuthStore } from "@/stores/auth";
+import { useUIStore } from "@/stores/ui";
+import { BaseButton, BaseCard } from "@/components/common";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,7 +29,9 @@ ChartJS.register(
   Filler
 );
 
+const { t } = useI18n();
 const authStore = useAuthStore();
+const uiStore = useUIStore();
 const stats = ref<any>(null);
 const loading = ref(true);
 
@@ -68,8 +73,8 @@ async function fetchStats() {
       datasets: [
         {
           label: "Revenue",
-          backgroundColor: "rgba(234, 88, 12, 0.1)",
-          borderColor: "#ea580c",
+          backgroundColor: "rgba(249, 115, 22, 0.1)",
+          borderColor: "#f97316",
           borderWidth: 3,
           data: response.data.chart_data.map((d: any) => d.revenue),
           fill: true,
@@ -79,6 +84,7 @@ async function fetchStats() {
     };
   } catch (e) {
     console.error("Failed to fetch stats", e);
+    uiStore.showToast("error", "Failed to load dashboard stats");
   } finally {
     loading.value = false;
   }
@@ -122,24 +128,21 @@ function downloadReport() {
 </script>
 
 <template>
-  <div class="p-8">
+  <div class="p-8 bg-bg-secondary dark:bg-gray-900 min-h-screen">
     <div class="mb-8 flex justify-between items-end">
       <div>
-        <h1 class="text-3xl font-bold text-app-text">Dashboard Overview</h1>
-        <p class="text-app-muted">Welcome back, {{ authStore.user?.name }}</p>
+        <h1 class="text-3xl font-bold text-text-primary dark:text-white">
+          {{ t("nav.dashboard") || "Dashboard Overview" }}
+        </h1>
+        <p class="text-text-secondary dark:text-gray-400">
+          Welcome back, {{ authStore.user?.name }}
+        </p>
       </div>
       <div class="flex gap-3">
-        <button
-          class="px-4 py-2 bg-app-surface border border-app-border rounded-xl text-sm font-bold text-app-muted hover:bg-app-bg hover:text-app-text transition-colors"
-        >
-          Last 7 Days
-        </button>
-        <button
-          @click="downloadReport"
-          class="px-4 py-2 bg-orange-600 rounded-xl text-sm font-bold text-white shadow-lg shadow-orange-200 hover:bg-orange-500 transition-all active:scale-95 flex items-center gap-2"
-        >
+        <BaseButton variant="secondary" size="md"> Last 7 Days </BaseButton>
+        <BaseButton variant="primary" @click="downloadReport">
           <svg
-            class="w-4 h-4"
+            class="w-4 h-4 mr-2"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -152,27 +155,25 @@ function downloadReport() {
             />
           </svg>
           Download Report
-        </button>
+        </BaseButton>
       </div>
     </div>
 
     <!-- Stats Grid -->
-    <div v-auto-animate class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <template v-if="loading">
         <div
           v-for="i in 3"
           :key="i"
-          class="h-32 bg-white rounded-3xl border border-gray-100 animate-pulse"
+          class="h-32 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 animate-pulse"
         ></div>
       </template>
 
       <template v-else-if="stats">
-        <div
-          class="bg-app-surface p-6 rounded-3xl border border-app-border shadow-sm hover:shadow-md transition-shadow"
-        >
+        <BaseCard padding="md" shadow="sm" hover>
           <div class="flex items-center gap-4 mb-4">
             <div
-              class="w-12 h-12 bg-green-500/10 text-green-600 rounded-2xl flex items-center justify-center"
+              class="w-12 h-12 bg-success-100 dark:bg-success-900/30 text-success-600 dark:text-success-400 rounded-2xl flex items-center justify-center"
             >
               <svg
                 class="w-6 h-6"
@@ -189,25 +190,25 @@ function downloadReport() {
               </svg>
             </div>
             <div>
-              <p class="text-sm font-medium text-app-muted">Total Revenue</p>
-              <h3 class="text-2xl font-bold text-app-text">
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Total Revenue
+              </p>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(stats.metrics.revenue) }}
               </h3>
             </div>
           </div>
           <div
-            class="text-xs text-green-600 font-bold bg-green-500/10 px-2 py-1 rounded-lg inline-block"
+            class="text-xs text-success-600 dark:text-success-400 font-bold bg-success-100 dark:bg-success-900/30 px-2 py-1 rounded-lg inline-block"
           >
             +12% from last week
           </div>
-        </div>
+        </BaseCard>
 
-        <div
-          class="bg-app-surface p-6 rounded-3xl border border-app-border shadow-sm"
-        >
+        <BaseCard padding="md" shadow="sm" hover>
           <div class="flex items-center gap-4 mb-4">
             <div
-              class="w-12 h-12 bg-blue-500/10 text-blue-600 rounded-2xl flex items-center justify-center"
+              class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center"
             >
               <svg
                 class="w-6 h-6"
@@ -224,25 +225,25 @@ function downloadReport() {
               </svg>
             </div>
             <div>
-              <p class="text-sm font-medium text-app-muted">Total Orders</p>
-              <h3 class="text-2xl font-bold text-app-text">
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Total Orders
+              </p>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ stats.metrics.orders }}
               </h3>
             </div>
           </div>
           <div
-            class="text-xs text-blue-600 font-bold bg-blue-500/10 px-2 py-1 rounded-lg inline-block"
+            class="text-xs text-blue-600 dark:text-blue-400 font-bold bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-lg inline-block"
           >
             +5 new today
           </div>
-        </div>
+        </BaseCard>
 
-        <div
-          class="bg-app-surface p-6 rounded-3xl border border-app-border shadow-sm"
-        >
+        <BaseCard padding="md" shadow="sm" hover>
           <div class="flex items-center gap-4 mb-4">
             <div
-              class="w-12 h-12 bg-orange-500/10 text-orange-600 rounded-2xl flex items-center justify-center"
+              class="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center"
             >
               <svg
                 class="w-6 h-6"
@@ -259,71 +260,82 @@ function downloadReport() {
               </svg>
             </div>
             <div>
-              <p class="text-sm font-medium text-app-muted">Avg. Order Value</p>
-              <h3 class="text-2xl font-bold text-app-text">
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Avg. Order Value
+              </p>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white">
                 {{ formatCurrency(stats.metrics.avg_order_value) }}
               </h3>
             </div>
           </div>
           <div
-            class="text-xs text-orange-600 font-bold bg-orange-500/10 px-2 py-1 rounded-lg inline-block"
+            class="text-xs text-primary-600 dark:text-primary-400 font-bold bg-primary-100 dark:bg-primary-900/30 px-2 py-1 rounded-lg inline-block"
           >
             Steady growth
           </div>
-        </div>
+        </BaseCard>
       </template>
     </div>
 
     <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Revenue Chart -->
-      <div
-        class="lg:col-span-2 bg-app-surface p-8 rounded-[32px] border border-app-border shadow-sm h-96"
+      <BaseCard
+        padding="lg"
+        shadow="md"
+        rounded="2xl"
+        class="lg:col-span-2 h-96"
       >
-        <h3 class="font-bold text-app-text mb-6 flex items-center gap-2">
+        <h3
+          class="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"
+        >
           Revenue Trend
-          <span class="text-xs font-normal text-app-muted font-mono"
+          <span
+            class="text-xs font-normal text-gray-500 dark:text-gray-400 font-mono"
             >(Last 7 Days)</span
           >
         </h3>
         <div class="h-64">
           <Line v-if="!loading" :data="chartData" :options="chartOptions" />
         </div>
-      </div>
+      </BaseCard>
 
       <!-- Top Products -->
-      <div
-        class="bg-app-surface p-8 rounded-[32px] border border-app-border shadow-sm flex flex-col h-96"
+      <BaseCard
+        padding="lg"
+        shadow="md"
+        rounded="2xl"
+        class="flex flex-col h-96"
       >
-        <h3 class="font-bold text-app-text mb-6">Top Selling Items</h3>
-        <div
-          v-if="stats"
-          v-auto-animate
-          class="flex-1 space-y-6 overflow-y-auto pr-2"
-        >
+        <h3 class="font-bold text-gray-900 dark:text-white mb-6">
+          Top Selling Items
+        </h3>
+        <div v-if="stats" class="flex-1 space-y-6 overflow-y-auto pr-2">
           <div
             v-for="product in stats.top_products"
             :key="product.name"
             class="flex items-center gap-4 group cursor-default"
           >
             <div
-              class="w-10 h-10 rounded-xl bg-app-bg flex items-center justify-center font-bold text-app-muted text-xs group-hover:bg-orange-500/10 group-hover:text-orange-600 transition-colors"
+              class="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center font-bold text-gray-500 dark:text-gray-400 text-xs group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors"
             >
               {{ product.total_sold }}x
             </div>
             <div class="flex-1">
               <p
-                class="text-sm font-bold text-app-text group-hover:text-orange-600 transition-colors"
+                class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors"
               >
                 {{ product.name }}
               </p>
-              <p class="text-[10px] text-app-muted uppercase font-medium">
+              <p
+                class="text-[10px] text-gray-400 dark:text-gray-500 uppercase font-medium"
+              >
                 {{ formatCurrency(product.total_revenue) }} revenue
               </p>
             </div>
           </div>
         </div>
-      </div>
+      </BaseCard>
     </div>
   </div>
 </template>

@@ -96,9 +96,9 @@ class AdminController extends Controller
                             Order::where('khqr_md5', $tx['md5'])
                                 ->where('payment_status', 'pending')
                                 ->update([
-                                        'payment_status' => 'paid',
-                                        'payment_metadata' => $tx['data'] ?? null
-                                    ]);
+                                    'payment_status' => 'paid',
+                                    'payment_metadata' => $tx['data'] ?? null
+                                ]);
                         }
                     }
                 }
@@ -107,9 +107,10 @@ class AdminController extends Controller
             }
         }
 
-        $transactions = Order::with(['items.product', 'tableSession.shopTable'])
-            ->where('shop_id', $shop->id)
-            ->where('payment_status', '!=', 'pending') // Only completed transactions
+        $transactions = \App\Models\Transaction::with(['order.items.product', 'order.tableSession.shopTable'])
+            ->whereHas('order', function ($query) use ($shop) {
+                $query->where('shop_id', $shop->id);
+            })
             ->orderBy('created_at', 'DESC')
             ->paginate(20);
 

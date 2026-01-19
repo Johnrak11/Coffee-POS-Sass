@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useCartStore } from "@/stores/cart";
 import { useSessionStore } from "@/stores/session";
-import { guestApi } from "@/services/api";
+import { guestApi } from "@/api";
 import { toast } from "vue-sonner";
 
 const router = useRouter();

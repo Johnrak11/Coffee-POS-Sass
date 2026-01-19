@@ -2,25 +2,30 @@
 import { Toaster } from "vue-sonner";
 import { onMounted } from "vue";
 import { useAuthStore } from "@/stores/auth";
-import { useThemeStore } from "@/stores/theme";
+import { useUIStore } from "@/stores/ui";
+import ToastContainer from "@/components/common/ToastContainer.vue";
 
 const authStore = useAuthStore();
-const themeStore = useThemeStore();
+const uiStore = useUIStore();
 
 onMounted(() => {
   authStore.restoreSession();
-  // Theme is applied automatically by store watcher
+  // Theme is applied automatically by UI store
 });
 </script>
 
 <template>
-  <div id="app" class="min-h-screen font-sans antialiased text-app-text bg-app-bg transition-colors duration-300">
+  <div
+    id="app"
+    class="min-h-screen font-sans antialiased text-app-text bg-app-bg transition-colors duration-300"
+  >
     <router-view v-slot="{ Component }">
       <transition name="page" mode="out-in">
         <component :is="Component" />
       </transition>
     </router-view>
     <Toaster position="top-center" richColors closeButton />
+    <ToastContainer />
   </div>
 </template>
 

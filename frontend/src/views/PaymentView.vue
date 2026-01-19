@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { guestApi } from "@/services/api";
+import { guestApi } from "@/api";
 import { toast } from "vue-sonner";
 import QrcodeVue from "qrcode.vue";
 

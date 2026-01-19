@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import apiClient from "@/services/api";
+import { useI18n } from "vue-i18n";
+import apiClient from "@/api";
 import { useAuthStore } from "@/stores/auth";
+import { BaseButton, BaseCard } from "@/components/common";
 import PaymentModal from "@/components/PaymentModal.vue";
 import ReceiptModal from "@/components/ReceiptModal.vue";
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const transactions = ref<any[]>([]);
 const loading = ref(true);
@@ -36,7 +39,10 @@ async function fetchTransactions(page = 1) {
 
     const data = response.data;
     if (data.data) {
-      transactions.value = data.data;
+      transactions.value = data.data.map((tx: any) => ({
+        ...tx,
+        expanded: false,
+      }));
       pagination.value = {
         current_page: data.current_page,
         last_page: data.last_page,
@@ -52,21 +58,6 @@ async function fetchTransactions(page = 1) {
   }
 }
 
-function formatAmount(order: any) {
-  if (order.payment_currency === "KHR") {
-    // Check if we have snapshot rate, else fallback
-    // Backend stores total_amount in KHR if payment_currency is KHR.
-    // So we just format it directly.
-    return (
-      new Intl.NumberFormat("en-US").format(Number(order.total_amount)) + " ៛"
-    );
-  }
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(order.total_amount);
-}
-
 function openPayment(order: any) {
   selectedOrder.value = order;
   showPaymentModal.value = true;
@@ -74,16 +65,13 @@ function openPayment(order: any) {
 
 function handlePaymentSuccess() {
   fetchTransactions(pagination.value.current_page);
-  // Ideally keep modal open or show success? PaymentModal handles success UI.
-  // PaymentModal emits 'success' then 'close'.
 }
 
 function handlePrint(order: any) {
-  // Map order to Receipt Data
   receiptData.value = {
     items: order.items,
     total: Number(order.total_amount),
-    cashReceived: Number(order.received_amount || order.total_amount), // Fallback if missing
+    cashReceived: Number(order.received_amount || order.total_amount),
     change:
       Number(order.received_amount) > Number(order.total_amount)
         ? Number(order.received_amount) - Number(order.total_amount)
@@ -98,162 +86,231 @@ function handlePrint(order: any) {
 </script>
 
 <template>
-  <div class="p-8">
+  <div class="p-8 bg-bg-secondary dark:bg-gray-900 min-h-screen">
+    <!-- Header -->
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Transaction History</h1>
-      <p class="text-gray-500">View and track all orders across your shop.</p>
+      <h1 class="text-3xl font-bold text-text-primary dark:text-white">
+        {{ t("transaction.transactionHistory") }}
+      </h1>
+      <p class="text-text-secondary dark:text-gray-400 mt-1">
+        {{
+          t("transaction.viewAllTransactions") ||
+          "View and track all transactions across your shop."
+        }}
+      </p>
     </div>
 
-    <div
-      class="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden"
-    >
+    <!-- Transactions Table Card -->
+    <BaseCard padding="none" shadow="md" rounded="2xl">
       <div class="overflow-x-auto">
         <table class="w-full text-left">
           <thead>
-            <tr class="bg-gray-50/50 border-b border-gray-100">
+            <tr
+              class="bg-gray-50/50 dark:bg-gray-800 border-b border-border-primary dark:border-gray-700"
+            >
               <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
               >
-                Order ID
+                {{ t("order.orderNumber") }} / {{ t("transaction.method") }}
               </th>
               <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
               >
-                Table
+                {{ t("order.items") }}
               </th>
               <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
               >
-                Items
+                {{ t("transaction.amount") }}
               </th>
               <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
               >
-                Amount
+                {{ t("transaction.status") }}
               </th>
               <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
+                class="px-6 py-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider"
               >
-                Status
-              </th>
-              <th
-                class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider"
-              >
-                Date
+                {{ t("transaction.date") }}
               </th>
               <th class="px-6 py-4"></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
+          <tbody class="divide-y divide-gray-50 dark:divide-gray-800">
+            <!-- Loading State -->
             <template v-if="loading">
               <tr v-for="i in 5" :key="i" class="animate-pulse">
-                <td colspan="7" class="px-6 py-4">
-                  <div class="h-4 bg-gray-100 rounded-full w-full"></div>
+                <td colspan="6" class="px-6 py-4">
+                  <div
+                    class="h-4 bg-gray-100 dark:bg-gray-800 rounded-full w-full"
+                  ></div>
                 </td>
               </tr>
             </template>
-            <tr
-              v-else
-              v-for="order in transactions"
-              :key="order.id"
-              class="hover:bg-gray-50/50 transition-colors"
-            >
-              <td class="px-6 py-4">
-                <div class="font-mono text-sm text-gray-600">
-                  {{ order.order_number }}
-                </div>
-                <div
-                  v-if="order.khqr_md5"
-                  class="text-[10px] text-gray-400 mt-1 font-mono truncate max-w-[120px]"
-                  title="KHQR MD5"
-                >
-                  MD5: {{ order.khqr_md5.substring(0, 8) }}...
-                </div>
-              </td>
-              <td class="px-6 py-4">
-                <span class="font-bold text-gray-800">{{
-                  order.table_session?.shop_table?.name || "POS"
-                }}</span>
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex -space-x-2">
+
+            <!-- Transaction Rows -->
+            <template v-else v-for="tx in transactions" :key="tx.id">
+              <tr
+                class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
+              >
+                <td class="px-6 py-4">
                   <div
-                    v-for="(item, idx) in order.items.slice(0, 3)"
-                    :key="idx"
-                    class="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-orange-600"
+                    class="font-mono text-sm text-gray-600 dark:text-gray-300 font-bold"
                   >
-                    {{ item.quantity }}x
+                    {{ tx.order?.order_number }}
                   </div>
                   <div
-                    v-if="order.items.length > 3"
-                    class="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-400"
+                    class="text-[10px] uppercase font-bold tracking-wider mt-1"
+                    :class="
+                      tx.payment_method === 'khqr'
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-green-600 dark:text-green-400'
+                    "
                   >
-                    +{{ order.items.length - 3 }}
+                    {{ tx.payment_method }}
                   </div>
-                </div>
-              </td>
-              <td class="px-6 py-4 font-bold text-gray-900">
-                {{ formatAmount(order) }}
-              </td>
-              <td class="px-6 py-4">
-                <span
-                  :class="[
-                    'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider',
-                    order.payment_status === 'paid'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700',
-                  ]"
-                >
-                  {{ order.payment_status === "paid" ? "Success" : "Failed" }}
-                </span>
-              </td>
-              <td class="px-6 py-4">
-                <p class="text-sm text-gray-900">
-                  {{ new Date(order.created_at).toLocaleDateString() }}
-                </p>
-                <p class="text-[10px] text-gray-400 font-medium">
-                  {{ new Date(order.created_at).toLocaleTimeString() }}
-                </p>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <button
-                  v-if="order.payment_status === 'pending'"
-                  @click="openPayment(order)"
-                  class="px-4 py-2 bg-primary-600 text-white text-xs font-bold rounded-lg hover:bg-primary-700 transition shadow-sm"
-                >
-                  Pay Now
-                </button>
-              </td>
-            </tr>
+                  <div
+                    v-if="
+                      tx.md5_hash &&
+                      tx.md5_hash !== 'N/A' &&
+                      !tx.md5_hash.startsWith('CASH')
+                    "
+                    class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 font-mono truncate max-w-[120px]"
+                    title="MD5 Hash"
+                  >
+                    MD5: {{ tx.md5_hash.substring(0, 8) }}...
+                  </div>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex -space-x-2" v-if="tx.order?.items">
+                    <div
+                      v-for="(item, idx) in tx.order.items.slice(0, 3)"
+                      :key="idx"
+                      class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] font-bold text-primary-600 dark:text-primary-400"
+                    >
+                      {{ item.quantity }}x
+                    </div>
+                    <div
+                      v-if="tx.order.items.length > 3"
+                      class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 dark:text-gray-500"
+                    >
+                      +{{ tx.order.items.length - 3 }}
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">
+                  {{
+                    tx.currency === "KHR"
+                      ? new Intl.NumberFormat("en-US").format(
+                          Number(tx.amount)
+                        ) + " ៛"
+                      : new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                        }).format(tx.amount)
+                  }}
+                </td>
+                <td class="px-6 py-4">
+                  <span
+                    :class="[
+                      'px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider',
+                      tx.verified_at
+                        ? 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400'
+                        : 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400',
+                    ]"
+                  >
+                    {{
+                      tx.verified_at
+                        ? t("transaction.verified")
+                        : t("order.pending")
+                    }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <p class="text-sm text-gray-900 dark:text-gray-200">
+                    {{ new Date(tx.created_at).toLocaleDateString() }}
+                  </p>
+                  <p
+                    class="text-[10px] text-gray-400 dark:text-gray-500 font-medium"
+                  >
+                    {{ new Date(tx.created_at).toLocaleTimeString() }}
+                  </p>
+                </td>
+                <td class="px-6 py-4 text-right space-x-2">
+                  <button
+                    @click="tx.expanded = !tx.expanded"
+                    class="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+                  >
+                    {{
+                      tx.expanded
+                        ? t("transaction.hideInfo")
+                        : t("transaction.showInfo")
+                    }}
+                  </button>
+                  <BaseButton
+                    v-if="!tx.verified_at && tx.order"
+                    @click="openPayment(tx.order)"
+                    variant="primary"
+                    size="sm"
+                  >
+                    {{ t("order.payment") }}
+                  </BaseButton>
+                </td>
+              </tr>
+
+              <!-- Expanded Details Row -->
+              <tr v-if="tx.expanded" class="bg-gray-50 dark:bg-gray-800/50">
+                <td colspan="6" class="px-6 py-4">
+                  <div
+                    class="text-xs font-mono bg-gray-900 dark:bg-black text-green-400 p-4 rounded-lg overflow-x-auto"
+                  >
+                    <pre>{{ JSON.stringify(tx.payload, null, 2) }}</pre>
+                  </div>
+                  <div
+                    class="mt-2 text-xs text-gray-500 dark:text-gray-400 font-mono"
+                  >
+                    <strong
+                      >{{
+                        t("transaction.fullString") || "Full String"
+                      }}:</strong
+                    >
+                    {{ tx.khqr_string }}
+                  </div>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>
-    </div>
+    </BaseCard>
 
     <!-- Pagination -->
     <div
-      class="mt-6 flex justify-between items-center text-sm text-gray-500"
+      class="mt-6 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400"
       v-if="pagination.last_page > 1"
     >
       <div>
-        Showing page {{ pagination.current_page }} of
+        {{ t("common.showing") || "Showing" }} {{ t("common.page") || "page" }}
+        {{ pagination.current_page }} {{ t("common.of") || "of" }}
         {{ pagination.last_page }}
       </div>
       <div class="flex gap-2">
-        <button
+        <BaseButton
           @click="fetchTransactions(pagination.current_page - 1)"
           :disabled="pagination.current_page <= 1"
-          class="px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-gray-700"
+          variant="secondary"
+          size="sm"
         >
-          Previous
-        </button>
-        <button
+          {{ t("common.previous") || "Previous" }}
+        </BaseButton>
+        <BaseButton
           @click="fetchTransactions(pagination.current_page + 1)"
           :disabled="pagination.current_page >= pagination.last_page"
-          class="px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-gray-700"
+          variant="secondary"
+          size="sm"
         >
-          Next
-        </button>
+          {{ t("common.next") || "Next" }}
+        </BaseButton>
       </div>
     </div>
 
@@ -277,4 +334,3 @@ function handlePrint(order: any) {
     />
   </div>
 </template>
-```

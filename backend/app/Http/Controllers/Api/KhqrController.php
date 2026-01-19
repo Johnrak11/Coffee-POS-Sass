@@ -30,6 +30,9 @@ class KhqrController extends Controller
             $request->currency
         );
 
+        // Cast to array to be safe
+        $result = (array) $result;
+
         if (!$result) {
             return response()->json(['message' => 'Failed to generate QR'], 500);
         }
@@ -65,6 +68,18 @@ class KhqrController extends Controller
                         'payment_status' => 'paid',
                         'payment_metadata' => $tx['data'] ?? null
                     ]);
+
+                    // Update Transaction Record
+                    $transaction = \App\Models\Transaction::where('order_id', $order->id)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+
+                    if ($transaction) {
+                        $transaction->update([
+                            'verified_at' => now(),
+                            'payload' => array_merge($transaction->payload ?? [], ['success_data' => $tx['data'] ?? null])
+                        ]);
+                    }
                 }
             }
         }
@@ -89,8 +104,9 @@ class KhqrController extends Controller
             ->first();
 
         $telegramChatId = $order ? $order->shop->bakong_telegram_chat_id : null;
+        $merchantName = $order ? ($order->shop->merchant_name ?? $order->shop->name) : null;
 
-        $result = $this->bakongService->checkTransactionStatus($md5, $telegramChatId);
+        $result = $this->bakongService->checkTransactionStatus($md5, $telegramChatId, $merchantName);
 
         if (!$result) {
             return response()->json(['message' => 'Failed to check status'], 500);
@@ -104,6 +120,18 @@ class KhqrController extends Controller
                     'payment_status' => 'paid',
                     'payment_metadata' => $result['data'] ?? null
                 ]);
+
+                // Update Transaction Record
+                $transaction = \App\Models\Transaction::where('order_id', $order->id)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                if ($transaction) {
+                    $transaction->update([
+                        'verified_at' => now(),
+                        'payload' => array_merge($transaction->payload ?? [], ['success_data' => $result['data'] ?? null])
+                    ]);
+                }
             }
         }
 
@@ -127,24 +155,57 @@ class KhqrController extends Controller
         }
 
         // Generate QR
-        $result = $this->bakongService->generateQr(
-            (float) $order->total_amount,
-            $order->payment_currency ?? 'USD', // Default to USD if null (legacy)
-            [
-                'merchant_name' => $order->shop->name,
-                'merchant_city' => $order->shop->city ?? 'Phnom Penh',
-                'telegram_chat_id' => $order->shop->bakong_telegram_chat_id
-            ]
-        );
+        try {
+            $result = $this->bakongService->generateQr(
+                (float) $order->total_amount,
+                $order->payment_currency ?? 'USD',
+                [
+                    'merchant_name' => $order->shop->merchant_name ?? $order->shop->name ?? 'Coffee POS',
+                    'merchant_city' => $order->shop->merchant_city ?? 'Phnom Penh',
+                    'telegram_chat_id' => $order->shop->bakong_telegram_chat_id,
+                    'order_id' => $order->order_number,
+                ]
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to connect to KHQR Service (Port 8000). Please check if the service is running.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
 
-        if (!$result || !isset($result['data'])) {
+        // Cast to array to be safe (in case service returns object)
+        $result = (array) $result;
+
+        if (!$result) {
             return response()->json(['message' => 'Failed to regenerate QR'], 500);
+        }
+
+        // Support both flat structure (PosOrderController style) and nested 'data' (legacy)
+        $data = isset($result['data']) ? (array) $result['data'] : $result;
+
+        // Ensure critical fields exist
+        if (!isset($data['qr_string']) || !isset($data['md5'])) {
+            return response()->json([
+                'message' => 'Invalid QR Response from Service',
+                'debug' => $result
+            ], 500);
         }
 
         // Update Order with new MD5/String
         $order->update([
-            'khqr_string' => $result['data']['qr_string'],
-            'khqr_md5' => $result['data']['md5'],
+            'khqr_string' => $data['qr_string'] ?? null,
+            'khqr_md5' => $data['md5'] ?? null,
+        ]);
+
+        // Create Transaction Record (KHQR)
+        \App\Models\Transaction::create([
+            'order_id' => $order->id,
+            'payment_method' => 'khqr',
+            'amount' => $order->total_amount,
+            'currency' => $order->payment_currency ?? 'USD',
+            'khqr_string' => $data['qr_string'] ?? 'N/A',
+            'md5_hash' => $data['md5'] ?? 'N/A',
+            'payload' => $result
         ]);
 
         return response()->json($result);

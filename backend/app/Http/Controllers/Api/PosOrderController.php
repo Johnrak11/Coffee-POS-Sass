@@ -57,12 +57,15 @@ class PosOrderController extends Controller
                     (float) $order->total_amount,
                     $order->payment_currency ?? 'USD',
                     [
-                        'orderId' => $order->order_number,
                         'merchant_name' => $shop->merchant_name ?? $shop->name ?? 'Coffee POS',
                         'merchant_city' => $shop->merchant_city ?? 'Phnom Penh',
                         'telegram_chat_id' => $shop->bakong_telegram_chat_id,
+                        'order_id' => $order->order_number,
                     ]
                 );
+
+                // Cast to array for safety
+                $qrResult = (array) $qrResult;
 
                 if ($qrResult) {
                     $order->khqr_md5 = $qrResult['md5'] ?? null;
@@ -71,7 +74,29 @@ class PosOrderController extends Controller
 
                     // Attach QR result to response so frontend can display it
                     $order->qr_data = $qrResult;
+
+                    // Create Transaction Record (KHQR)
+                    \App\Models\Transaction::create([
+                        'order_id' => $order->id,
+                        'payment_method' => 'khqr',
+                        'amount' => $order->total_amount,
+                        'currency' => $order->payment_currency ?? 'USD',
+                        'khqr_string' => $qrResult['qr_string'] ?? 'N/A',
+                        'md5_hash' => $qrResult['md5'] ?? 'N/A',
+                        'payload' => $qrResult
+                    ]);
                 }
+            } else {
+                // Create Transaction Record (Cash)
+                \App\Models\Transaction::create([
+                    'order_id' => $order->id,
+                    'payment_method' => 'cash',
+                    'amount' => $order->total_amount,
+                    'currency' => $order->payment_currency ?? 'USD',
+                    'khqr_string' => 'CASH_MANUAL',
+                    'md5_hash' => 'CASH_' . uniqid(),
+                    'payload' => ['message' => 'Cash Payment Manual']
+                ]);
             }
 
             return response()->json([

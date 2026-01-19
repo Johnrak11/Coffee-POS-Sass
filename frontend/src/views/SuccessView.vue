@@ -2,7 +2,7 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useSessionStore } from "@/stores/session";
-import { guestApi } from "@/services/api";
+import { guestApi } from "@/api";
 
 const route = useRoute();
 const router = useRouter();

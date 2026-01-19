@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
-import apiClient from "@/services/api";
+import apiClient from "@/api";
 import InvoiceModal from "@/components/InvoiceModal.vue";
 import OrderDetailModal from "@/components/OrderDetailModal.vue";
 import PaymentModal from "@/components/PaymentModal.vue";

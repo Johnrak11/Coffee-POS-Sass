@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import apiClient from "@/services/api";
+import { useI18n } from "vue-i18n";
+import apiClient from "@/api";
 import { useAuthStore } from "@/stores/auth";
-import { toast } from "vue-sonner";
+import { useUIStore } from "@/stores/ui";
+import { BaseButton, BaseCard, BaseInput } from "@/components/common";
 import ImageUpload from "@/components/ImageUpload.vue";
 
+const { t } = useI18n();
 const authStore = useAuthStore();
+const uiStore = useUIStore();
 const loading = ref(true);
 const saving = ref(false);
 const pendingLogoFile = ref<File | null>(null);
@@ -37,13 +41,11 @@ async function fetchSettings() {
       `/staff/admin/${shopSlug}/menu/settings`
     );
     form.value = response.data;
-
-    // IMPORTANT: Update authStore.shop with the fetched data
     authStore.shop = response.data;
-
-    console.log("Settings loaded and shop updated:", authStore.shop);
+    console.log("Settings  loaded and shop updated:", authStore.shop);
   } catch (e) {
     console.error(e);
+    uiStore.showToast("error", "Failed to load settings");
   } finally {
     loading.value = false;
   }
@@ -76,26 +78,23 @@ async function saveSettings() {
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
 
   try {
-    // Upload logo if changed
     if (pendingLogoFile.value) {
       const logoUrl = await uploadToCloudinary(pendingLogoFile.value);
       form.value.logo_url = logoUrl;
     }
 
     await apiClient.put(`/staff/admin/${shopSlug}/menu/settings`, form.value);
-    // Update local store if name changed
     if (authStore.shop) {
       Object.assign(authStore.shop, form.value);
     }
 
-    // Force refresh the settings to apply theme immediately
     await fetchSettings();
     pendingLogoFile.value = null;
 
-    toast.success("Settings saved successfully!");
+    uiStore.showToast("success", "Settings saved successfully!");
   } catch (e) {
     console.error(e);
-    toast.error("Failed to update settings");
+    uiStore.showToast("error", "Failed to update settings");
   } finally {
     saving.value = false;
   }
@@ -103,200 +102,189 @@ async function saveSettings() {
 </script>
 
 <template>
-  <div class="p-8 max-w-4xl">
+  <div
+    class="p-8 max-w-4xl mx-auto bg-bg-secondary dark:bg-gray-900 min-h-screen"
+  >
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Shop Settings</h1>
-      <p class="text-gray-500">
+      <h1 class="text-3xl font-bold text-text-primary dark:text-white">
+        {{ t("nav.settings") || "Shop Settings" }}
+      </h1>
+      <p class="text-text-secondary dark:text-gray-400">
         Configure your shop profile and receipt preferences.
       </p>
     </div>
 
     <div v-if="loading" class="animate-pulse space-y-6">
-      <div class="h-64 bg-white rounded-3xl border border-gray-100"></div>
+      <div
+        class="h-64 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700"
+      ></div>
     </div>
 
-    <div
-      v-else
-      class="bg-white rounded-[32px] border border-gray-100 shadow-sm p-8 space-y-8"
-    >
-      <!-- General Profile Section -->
-      <div>
-        <h3
-          class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2"
-        >
-          <span class="w-1.5 h-6 bg-orange-600 rounded-full"></span>
-          General Profile
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <!-- Logo Col -->
-          <div
-            class="flex flex-col items-center justify-start p-6 bg-gray-50 rounded-3xl border border-gray-100"
+    <BaseCard v-else padding="lg" shadow="md" rounded="2xl">
+      <div class="space-y-8">
+        <!-- General Profile Section -->
+        <div>
+          <h3
+            class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"
           >
-            <label
-              class="block text-xs font-bold text-gray-400 uppercase mb-4 self-start"
-              >Shop Logo</label
+            <span
+              class="w-1.5 h-6 bg-primary-600 dark:bg-primary-500 rounded-full"
+            ></span>
+            General Profile
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Logo Col -->
+            <div
+              class="flex flex-col items-center justify-start p-6 bg-gray-50 dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700"
             >
-            <ImageUpload
-              v-model="form.logo_url"
-              folder="logos"
-              @fileSelected="pendingLogoFile = $event"
-            />
-            <p class="text-xs text-gray-400 mt-4 text-center">
-              Recommended: 800x800px or square image.
-            </p>
-          </div>
-
-          <!-- Fields Col -->
-          <div class="space-y-6">
-            <div>
               <label
-                class="block text-xs font-bold text-gray-400 uppercase mb-2"
-                >Shop Name</label
+                class="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-4 self-start"
               >
-              <input
+                Shop Logo
+              </label>
+              <ImageUpload
+                v-model="form.logo_url"
+                folder="logos"
+                @fileSelected="pendingLogoFile = $event"
+              />
+              <p
+                class="text-xs text-gray-400 dark:text-gray-500 mt-4 text-center"
+              >
+                Recommended: 800x800px or square image.
+              </p>
+            </div>
+
+            <!-- Fields Col -->
+            <div class="space-y-6">
+              <BaseInput
                 v-model="form.name"
-                type="text"
-                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-shadow"
+                label="Shop Name"
+                placeholder="Enter shop name"
               />
-            </div>
-            <div>
-              <label
-                class="block text-xs font-bold text-gray-400 uppercase mb-2"
-                >Phone Number</label
-              >
-              <input
+              <BaseInput
                 v-model="form.phone"
-                type="text"
-                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-shadow"
+                label="Phone Number"
+                type="tel"
+                placeholder="+855 12 345 678"
               />
-            </div>
-            <div>
-              <label
-                class="block text-xs font-bold text-gray-400 uppercase mb-2"
-                >Address</label
-              >
-              <textarea
-                v-model="form.address"
-                rows="3"
-                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-shadow"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- Exchange Rate (Now separate row inside General or just below) -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Exchange Rate (1 USD = ? KHR)</label
-            >
-            <div class="relative">
-              <input
-                v-model="form.exchange_rate"
-                type="number"
-                min="0"
-                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none transition-shadow"
-                placeholder="4100"
-              />
-              <div
-                class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500 font-bold"
-              >
-                ៛
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                >
+                  Address
+                </label>
+                <textarea
+                  v-model="form.address"
+                  rows="3"
+                  class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                  placeholder="Street address, city, country"
+                ></textarea>
               </div>
             </div>
-            <p class="text-xs text-gray-400 mt-2">
-              Used for cash payments in Khmer Riel.
+          </div>
+
+          <!-- Exchange Rate -->
+          <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
+                Exchange Rate (1 USD = ? KHR)
+              </label>
+              <div class="relative">
+                <input
+                  v-model="form.exchange_rate"
+                  type="number"
+                  min="0"
+                  class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                  placeholder="4100"
+                />
+                <div
+                  class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500 dark:text-gray-400 font-bold"
+                >
+                  ៛
+                </div>
+              </div>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                Used for cash payments in Khmer Riel.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Configuration Section -->
+        <div class="pt-8 border-t border-gray-100 dark:border-gray-700">
+          <h3
+            class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"
+          >
+            <span
+              class="w-1.5 h-6 bg-primary-600 dark:bg-primary-500 rounded-full"
+            ></span>
+            Bakong Payment Configuration
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+              <BaseInput
+                v-model="form.bakong_account_id"
+                label="Bakong Account ID"
+                placeholder="your_account@bakong"
+              />
+            </div>
+            <BaseInput
+              v-model="form.merchant_name"
+              label="Merchant Name"
+              placeholder="Lucky Café"
+            />
+            <BaseInput
+              v-model="form.merchant_city"
+              label="Merchant City"
+              placeholder="Phnom Penh"
+            />
+            <div class="md:col-span-2">
+              <BaseInput
+                v-model="form.bakong_telegram_chat_id"
+                label="Telegram Chat ID (Optional)"
+                placeholder="Enter Telegram Chat ID for notifications"
+              />
+            </div>
+          </div>
+          <div
+            class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-2xl flex gap-3"
+          >
+            <svg
+              class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p class="text-sm text-blue-700 dark:text-blue-300">
+              These details will appear on guest payment QR codes for Bakong
+              transfers.
             </p>
           </div>
         </div>
-      </div>
 
-      <!-- Payment Configuration Section -->
-      <div class="pt-8 border-t border-gray-50">
-        <h3
-          class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2"
-        >
-          <span class="w-1.5 h-6 bg-orange-600 rounded-full"></span>
-          Bakong Payment Configuration
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="md:col-span-2">
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Bakong Account ID</label
-            >
-            <input
-              v-model="form.bakong_account_id"
-              type="text"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
-              placeholder="your_account@bakong"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Merchant Name</label
-            >
-            <input
-              v-model="form.merchant_name"
-              type="text"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
-              placeholder="Lucky Café"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Merchant City</label
-            >
-            <input
-              v-model="form.merchant_city"
-              type="text"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
-              placeholder="Phnom Penh"
-            />
-          </div>
-          <div class="md:col-span-2">
-            <label class="block text-xs font-bold text-gray-400 uppercase mb-2"
-              >Telegram Chat ID (Optional)</label
-            >
-            <input
-              v-model="form.bakong_telegram_chat_id"
-              type="text"
-              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-orange-500 outline-none"
-              placeholder="Enter Telegram Chat ID for notifications"
-            />
-          </div>
-        </div>
-        <div
-          class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex gap-3"
-        >
-          <svg
-            class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <div class="pt-8 flex justify-end">
+          <BaseButton
+            variant="primary"
+            size="lg"
+            @click="saveSettings"
+            :loading="saving"
+            :disabled="saving"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <p class="text-sm text-blue-700">
-            These details will appear on guest payment QR codes for Bakong
-            transfers.
-          </p>
+            {{
+              saving ? "Saving Changes..." : t("common.save") || "Save Settings"
+            }}
+          </BaseButton>
         </div>
       </div>
-
-      <div class="pt-8 flex justify-end">
-        <button
-          @click="saveSettings"
-          :disabled="saving"
-          class="px-10 py-4 bg-orange-600 rounded-2xl text-white font-bold shadow-lg shadow-orange-100 hover:bg-orange-500 transition-all disabled:opacity-50 active:scale-95"
-        >
-          {{ saving ? "Saving Changes..." : "Save Settings" }}
-        </button>
-      </div>
-    </div>
+    </BaseCard>
   </div>
 </template>

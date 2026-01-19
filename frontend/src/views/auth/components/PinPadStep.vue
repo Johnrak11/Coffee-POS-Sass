@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { LanguageSelector } from "@/components/common";
 
 const props = defineProps<{
   user: any;
@@ -38,16 +39,23 @@ watch(
   <div
     class="glass-card bg-gray-800/80 backdrop-blur-xl p-8 rounded-[32px] border border-gray-700 shadow-2xl animate-fade-in"
   >
-    <div class="text-center mb-8">
-      <div
-        class="w-20 h-20 bg-primary-600 rounded-full mx-auto flex items-center justify-center mb-4 shadow-lg shadow-primary-900/50"
-      >
-        <span class="text-4xl font-black text-white">{{
-          user.name.charAt(0)
-        }}</span>
+    <!-- Header with Language Selector -->
+    <div class="flex justify-between items-start mb-8">
+      <div class="text-center flex-1">
+        <div
+          class="w-20 h-20 bg-primary-600 rounded-full mx-auto flex items-center justify-center mb-4 shadow-lg shadow-primary-900/50"
+        >
+          <span class="text-4xl font-black text-white">{{
+            user.name.charAt(0)
+          }}</span>
+        </div>
+        <h2 class="text-gray-400 mb-1">Enter PIN for</h2>
+        <p class="text-2xl font-bold text-white">{{ user.name }}</p>
       </div>
-      <h2 class="text-gray-400 mb-1">Enter PIN for</h2>
-      <p class="text-2xl font-bold text-white">{{ user.name }}</p>
+      <!-- Language Selector -->
+      <div class="absolute top-8 right-8">
+        <LanguageSelector />
+      </div>
     </div>
 
     <!-- PIN Display -->

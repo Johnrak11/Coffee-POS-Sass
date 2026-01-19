@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useKitchenStore } from "@/stores/kitchen";
+import { BaseButton } from "@/components/common";
 
 const kitchenStore = useKitchenStore();
 const loading = ref(true);
@@ -34,18 +35,17 @@ onUnmounted(() => {
 });
 
 async function fetchData() {
-  // Use 'lucky-cafe' or getting from auth store
   await kitchenStore.fetchOrders("lucky-cafe");
 }
 
 function getStatusColor(status: string) {
   switch (status) {
     case "queue":
-      return "bg-orange-500/20 text-orange-400 border-orange-500/50";
+      return "bg-primary-500/20 dark:bg-primary-900/30 text-primary-400 border-primary-500/50 dark:border-primary-800";
     case "preparing":
-      return "bg-blue-500/10 text-blue-500 border-blue-200 dark:border-blue-900";
+      return "bg-blue-500/10 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400 border-blue-200 dark:border-blue-900";
     default:
-      return "bg-gray-100 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700";
+      return "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700";
   }
 }
 
@@ -65,9 +65,9 @@ function getTimerColor(createdAt: string) {
   const now = new Date().getTime();
   const mins = (now - start) / 60000;
 
-  if (mins > 10) return "text-red-500 animate-pulse";
-  if (mins > 5) return "text-yellow-500";
-  return "text-green-500";
+  if (mins > 10) return "text-red-500 dark:text-red-400 animate-pulse";
+  if (mins > 5) return "text-yellow-500 dark:text-yellow-400";
+  return "text-success-500 dark:text-success-400";
 }
 
 async function handleNextStatus(order: any) {
@@ -78,13 +78,15 @@ async function handleNextStatus(order: any) {
 </script>
 
 <template>
-  <div class="h-full p-6 overflow-x-auto flex gap-6 items-start">
+  <div
+    class="h-full p-6 overflow-x-auto flex gap-6 items-start bg-bg-secondary dark:bg-gray-900"
+  >
     <div
       v-if="loading"
-      class="absolute inset-0 flex items-center justify-center bg-app-bg/50 backdrop-blur-sm z-50"
+      class="absolute inset-0 flex items-center justify-center bg-app-bg/50 dark:bg-gray-900/50 backdrop-blur-sm z-50"
     >
       <div
-        class="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"
+        class="w-12 h-12 border-4 border-primary-500 dark:border-primary-600 border-t-transparent rounded-full animate-spin"
       ></div>
     </div>
 
@@ -94,7 +96,7 @@ async function handleNextStatus(order: any) {
       class="flex-1 flex flex-col items-center justify-center opacity-30 mt-20"
     >
       <svg
-        class="w-32 h-32 mb-4 text-app-muted"
+        class="w-32 h-32 mb-4 text-app-muted dark:text-gray-700"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -106,8 +108,12 @@ async function handleNextStatus(order: any) {
           d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
         ></path>
       </svg>
-      <h2 class="text-3xl font-bold text-app-text">Kitchen is clear!</h2>
-      <p class="text-app-muted">New orders will appear here automatically.</p>
+      <h2 class="text-3xl font-bold text-app-text dark:text-white">
+        Kitchen is clear!
+      </h2>
+      <p class="text-app-muted dark:text-gray-400">
+        New orders will appear here automatically.
+      </p>
     </div>
 
     <!-- Order Grid -->
@@ -119,17 +125,17 @@ async function handleNextStatus(order: any) {
       <div
         v-for="order in kitchenStore.orders"
         :key="order.id"
-        class="w-80 bg-app-surface rounded-2xl shadow-xl flex flex-col max-h-full border border-app-border overflow-hidden transition-colors duration-300"
+        class="w-80 bg-app-surface dark:bg-gray-800 rounded-2xl shadow-xl flex flex-col max-h-full border border-app-border dark:border-gray-700 overflow-hidden transition-colors duration-300"
       >
         <!-- Card Header -->
         <div
-          class="p-4 border-b border-app-border flex justify-between items-start"
+          class="p-4 border-b border-app-border dark:border-gray-700 flex justify-between items-start"
         >
           <div>
-            <div class="text-sm text-app-muted font-mono">
+            <div class="text-sm text-app-muted dark:text-gray-400 font-mono">
               {{ order.order_number }}
             </div>
-            <div class="text-xl font-bold text-app-text">
+            <div class="text-xl font-bold text-app-text dark:text-white">
               {{ order.shop_table_name }}
             </div>
           </div>
@@ -145,9 +151,9 @@ async function handleNextStatus(order: any) {
 
         <!-- Timer Bar -->
         <div
-          class="bg-app-bg px-4 py-2 flex justify-between items-center text-sm border-b border-app-border"
+          class="bg-app-bg dark:bg-gray-900 px-4 py-2 flex justify-between items-center text-sm border-b border-app-border dark:border-gray-700"
         >
-          <span class="text-app-muted">Wait Time:</span>
+          <span class="text-app-muted dark:text-gray-400">Wait Time:</span>
           <span
             :class="['font-mono font-bold', getTimerColor(order.created_at)]"
           >
@@ -160,21 +166,24 @@ async function handleNextStatus(order: any) {
           <div v-if="order.items && order.items.length > 0" class="space-y-3">
             <div v-for="item in order.items" :key="item.id" class="flex gap-3">
               <div
-                class="w-8 h-8 rounded bg-app-bg flex items-center justify-center font-bold text-orange-600 border border-app-border"
+                class="w-8 h-8 rounded bg-app-bg dark:bg-gray-900 flex items-center justify-center font-bold text-primary-600 dark:text-primary-400 border border-app-border dark:border-gray-700"
               >
                 {{ item.quantity }}
               </div>
               <div class="flex-1">
-                <div class="font-bold text-app-text">
+                <div class="font-bold text-app-text dark:text-white">
                   {{ item.product?.name }}
                 </div>
-                <div v-if="item.variant" class="text-xs text-app-muted italic">
+                <div
+                  v-if="item.variant"
+                  class="text-xs text-app-muted dark:text-gray-400 italic"
+                >
                   {{ item.variant.name }}: {{ item.variant.option_name }}
                 </div>
                 <!-- Display Options -->
                 <div
                   v-if="item.options && item.options.length > 0"
-                  class="text-xs text-orange-600 mt-1 space-y-0.5 font-medium"
+                  class="text-xs text-primary-600 dark:text-primary-400 mt-1 space-y-0.5 font-medium"
                 >
                   <div v-for="(opt, idx) in item.options" :key="idx">
                     ▸ {{ opt.group_name }}: {{ opt.option_name }}
@@ -183,26 +192,27 @@ async function handleNextStatus(order: any) {
               </div>
             </div>
           </div>
-          <div v-else class="text-xs text-app-muted italic">No items found</div>
+          <div v-else class="text-xs text-app-muted dark:text-gray-400 italic">
+            No items found
+          </div>
         </div>
 
         <!-- Action Area -->
-        <div class="p-4 bg-app-bg/50">
-          <button
+        <div class="p-4 bg-app-bg/50 dark:bg-gray-900/50">
+          <BaseButton
+            :variant="
+              order.fulfillment_status === 'queue' ? 'primary' : 'secondary'
+            "
+            size="lg"
+            fullWidth
             @click="handleNextStatus(order)"
-            :class="[
-              'w-full py-3 rounded-xl font-bold transition-all active:scale-95 text-white',
-              order.fulfillment_status === 'queue'
-                ? 'bg-orange-600 hover:bg-orange-500 shadow-lg shadow-orange-900/20'
-                : 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20',
-            ]"
           >
             {{
               order.fulfillment_status === "queue"
                 ? "START PREPARING"
                 : "MARK AS SERVED"
             }}
-          </button>
+          </BaseButton>
         </div>
       </div>
     </TransitionGroup>

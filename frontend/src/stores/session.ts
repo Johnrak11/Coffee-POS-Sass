@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { guestApi } from "@/services/api";
+import guestApi from "@/api/guest";
 
 export const useSessionStore = defineStore("session", () => {
   const sessionToken = ref<string | null>(

@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import BaseModal from "@/components/ui/BaseModal.vue";
-import BaseInput from "@/components/ui/BaseInput.vue";
-import BaseButton from "@/components/ui/BaseButton.vue";
-import apiClient from "@/services/api";
+// BaseModal removed - needs to be recreated in @/components/common
+import { BaseInput, BaseButton } from "@/components/common";
+import apiClient from "@/api";
 import { toast } from "vue-sonner";
 
 const props = defineProps<{

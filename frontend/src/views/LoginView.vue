@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "vue-router";
-import apiClient from "@/services/api";
+import apiClient from "@/api";
 
 // Components
 import ShopFinderStep from "./auth/components/ShopFinderStep.vue";
@@ -19,6 +19,7 @@ const shopName = ref("");
 const users = ref<any[]>([]);
 const selectedUser = ref<any>(null);
 const loading = ref(false);
+const initializing = ref(false);
 const error = ref("");
 
 onMounted(async () => {
@@ -58,10 +59,7 @@ async function onShopVerify(payload: { slug: string; password: string }) {
   shopSlug.value = payload.slug;
 
   try {
-    const response = await apiClient.post(
-      "/shop/verify",
-      payload
-    );
+    const response = await apiClient.post("/shop/verify", payload);
     if (response.data.success) {
       shopName.value = response.data.shop.name;
       const fetchedUsers = await authStore.getStaffList(shopSlug.value);
@@ -98,7 +96,7 @@ async function onPinLogin(pin: string) {
 
   const success = await authStore.login(selectedUser.value.id, pin);
   if (success) {
-    if (selectedUser.value.role === 'barista') {
+    if (selectedUser.value.role === "barista") {
       router.push("/kitchen");
     } else {
       router.push("/pos");
@@ -120,29 +118,44 @@ function resetShop() {
 
 <template>
   <div
-    class="min-h-screen flex flex-col items-center justify-center bg-gray-900 p-6 relative overflow-hidden text-balance">
+    class="min-h-screen flex flex-col items-center justify-center bg-gray-900 p-6 relative overflow-hidden text-balance"
+  >
     <!-- Background Decor -->
-    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-20 pointer-events-none">
-      <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600 rounded-full blur-[150px]"></div>
-      <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[150px]"></div>
+    <div
+      class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-20 pointer-events-none"
+    >
+      <div
+        class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600 rounded-full blur-[150px]"
+      ></div>
+      <div
+        class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[150px]"
+      ></div>
     </div>
 
     <!-- Container -->
     <div class="w-full max-w-5xl z-10">
-
       <!-- Initial Loading State -->
       <div v-if="initializing" class="flex justify-center items-center h-64">
-        <div class="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+        <div
+          class="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"
+        ></div>
       </div>
 
       <template v-else>
         <!-- Step 1 -->
         <div v-if="currentStep === 'find-shop'" class="flex justify-center">
-          <ShopFinderStep :loading="loading" :error="error" @verify="onShopVerify" />
+          <ShopFinderStep
+            :loading="loading"
+            :error="error"
+            @verify="onShopVerify"
+          />
         </div>
 
         <!-- Step 2 & 3 -->
-        <div v-else class="grid md:grid-cols-2 gap-8 items-start animate-fade-in">
+        <div
+          v-else
+          class="grid md:grid-cols-2 gap-8 items-start animate-fade-in"
+        >
           <!-- Left: Info & Staff List -->
           <div class="space-y-6">
             <!-- Header -->
@@ -153,19 +166,33 @@ function resetShop() {
                   {{ shopSlug }}
                 </h1>
               </div>
-              <button @click="authStore.logoutShop(); resetShop()"
-                class="text-sm font-bold text-gray-500 hover:text-white bg-gray-800/50 px-4 py-2 rounded-xl transition-colors">
+              <button
+                @click="
+                  authStore.logoutShop();
+                  resetShop();
+                "
+                class="text-sm font-bold text-gray-500 hover:text-white bg-gray-800/50 px-4 py-2 rounded-xl transition-colors"
+              >
                 Lock Terminal
               </button>
             </div>
 
-            <StaffSelectionStep :users="users" :selectedUserId="selectedUser?.id" :dimmed="currentStep === 'pin'"
-              @select="onStaffSelect" />
+            <StaffSelectionStep
+              :users="users"
+              :selectedUserId="selectedUser?.id"
+              :dimmed="currentStep === 'pin'"
+              @select="onStaffSelect"
+            />
           </div>
 
           <!-- Right: PIN Pad -->
           <div v-if="currentStep === 'pin'">
-            <PinPadStep :user="selectedUser" :loading="loading" :error="error" @login="onPinLogin" />
+            <PinPadStep
+              :user="selectedUser"
+              :loading="loading"
+              :error="error"
+              @login="onPinLogin"
+            />
           </div>
         </div>
       </template>

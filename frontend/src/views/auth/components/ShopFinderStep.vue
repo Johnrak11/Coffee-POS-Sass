@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import BaseInput from "@/components/ui/BaseInput.vue";
-import BaseButton from "@/components/ui/BaseButton.vue";
+import { BaseInput, BaseButton } from "@/components/common";
+import { useRouter } from "vue-router";
 
 defineProps<{
   loading: boolean;

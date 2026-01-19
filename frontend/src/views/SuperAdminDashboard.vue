@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import apiClient from "@/services/api";
+import apiClient from "@/api";
 import { toast } from "vue-sonner";
-import BaseButton from "@/components/ui/BaseButton.vue";
+import { BaseButton } from "@/components/common";
 
 // Components
 import ShopsTable from "./super-admin/components/ShopsTable.vue";

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
-import { guestApi } from "@/services/api";
+import { guestApi } from "@/api";
 import { useCartStore } from "@/stores/cart";
 import { useSessionStore } from "@/stores/session";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal.vue";

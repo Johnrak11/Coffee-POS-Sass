@@ -2,7 +2,7 @@
 import { ref, computed, onUnmounted, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { usePosStore } from "@/stores/pos";
-import apiClient from "@/services/api";
+import apiClient from "@/api";
 
 const props = defineProps<{
   show: boolean;
@@ -176,7 +176,7 @@ async function handleKhqrPayment() {
     qrString.value = "";
     qrImage.value = "";
     paymentStatus.value = "pending";
-    qrTimer.value = 120;
+    qrTimer.value = 300; // 5 minutes
 
     // Snapshot values
     snapshotAmount.value = totalInCurrency.value;
@@ -192,7 +192,10 @@ async function handleKhqrPayment() {
       });
       result = {
         success: true,
-        order: { ...targetOrder, qr_data: response.data.data },
+        order: {
+          ...targetOrder,
+          qr_data: response.data.data || response.data,
+        },
       };
     } else {
       // CREATE Flow (First time)
@@ -376,7 +379,7 @@ onUnmounted(() => {
     <div
       class="relative bg-app-surface rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in border border-app-border"
     >
-      <div class="max-h-[85vh] overflow-y-auto custom-scrollbar no-scrollbar">
+      <div class="w-full flex flex-col h-full">
         <!-- Mode: Calculation / Input -->
         <div
           v-if="
@@ -489,7 +492,7 @@ onUnmounted(() => {
               >
               <div class="flex gap-2">
                 <div
-                  class="flex-1 bg-app-bg rounded-xl p-4 text-3xl font-bold text-right text-app-text border-2 border-transparent focus-within:border-primary-500 transition-colors"
+                  class="flex-1 bg-app-bg rounded-xl p-2 text-3xl font-bold text-right text-app-text border-2 border-transparent focus-within:border-primary-500 transition-colors"
                   :class="{ 'opacity-50': paymentMethod === 'KHQR' }"
                 >
                   {{
@@ -668,47 +671,9 @@ onUnmounted(() => {
           class="p-0 bg-gray-50 dark:bg-gray-900 flex flex-col relative transition-all duration-300"
         >
           <!-- Custom Header for KHQR Card -->
-          <div
-            v-if="
-              qrLoading ||
-              qrImage ||
-              paymentStatus === 'failed' ||
-              paymentStatus === 'expired'
-            "
-            class="bg-gradient-to-r from-red-600 to-rose-700 text-white px-6 py-4 flex items-center justify-between shadow-lg z-10"
-          >
-            <div
-              class="font-bold text-2xl tracking-tight flex items-center gap-2"
-            >
-              <div
-                class="border-2 border-white rounded px-2 py-0.5 text-xs font-black tracking-widest bg-white/10 backdrop-blur-sm"
-              >
-                KHQR
-              </div>
-              <span class="text-white/90">PAYMENT</span>
-            </div>
-            <button
-              @click="handleClose"
-              class="text-white/80 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
-            >
-              <svg
-                class="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                ></path>
-              </svg>
-            </button>
-          </div>
 
           <div
-            class="flex-1 flex flex-col items-center justify-center px-6 relative py-10"
+            class="flex-1 flex flex-col items-center justify-center px-4 py-6 relative"
           >
             <!-- Loading State -->
             <div
@@ -716,157 +681,212 @@ onUnmounted(() => {
               class="flex flex-col items-center text-center animate-pulse"
             >
               <div
-                class="w-20 h-20 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-6"
+                class="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4"
               ></div>
-              <p class="text-gray-900 font-bold text-lg mb-2">
-                Generating secure QR code...
+              <p class="text-gray-900 font-bold text-lg mb-1">
+                Generating secure QR...
               </p>
-              <p class="text-gray-500 text-sm">
-                Please wait while we connect to Bakong
-              </p>
+              <p class="text-gray-500 text-xs">Connecting to Bakong</p>
             </div>
 
             <!-- Expired State -->
             <div
-              v-if="paymentStatus === 'expired'"
-              class="text-center bg-white p-8 rounded-3xl shadow-xl max-w-sm animate-scale-in"
+              v-else-if="paymentStatus === 'expired'"
+              class="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-[320px] relative border border-gray-100"
             >
+              <!-- Red Header -->
               <div
-                class="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4"
+                class="bg-[#E61F25] h-14 flex items-center justify-center relative"
               >
-                <svg
-                  class="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <h2 class="text-white font-black text-2xl tracking-wider">
+                  KHQR
+                </h2>
+                <!-- Close X -->
+                <button
+                  @click="handleClose"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-1"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    ></path>
+                  </svg>
+                </button>
               </div>
-              <h3 class="text-2xl font-black text-gray-900 mb-2">QR Expired</h3>
-              <p class="text-gray-500 mb-6">
-                This transaction session has timed out for security.
-              </p>
-              <button
-                @click="handleConfirm"
-                class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg"
-              >
-                Try Again
-              </button>
-              <button
-                @click="handleClose"
-                class="mt-4 text-gray-400 hover:text-gray-600 text-sm font-bold"
-              >
-                Cancel
-              </button>
+
+              <div class="p-8 flex flex-col items-center text-center">
+                <div
+                  class="w-16 h-16 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-4"
+                >
+                  <svg
+                    class="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 class="font-bold text-gray-900 text-xl mb-2">QR Expired</h3>
+                <p class="text-gray-500 text-sm mb-6 leading-relaxed">
+                  Session timed out.
+                </p>
+                <div class="w-full flex flex-col gap-3">
+                  <button
+                    @click="handleKhqrPayment"
+                    class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-200"
+                  >
+                    Try Again
+                  </button>
+                  <button
+                    @click="cancelKhqr"
+                    class="text-gray-400 font-bold hover:text-gray-600 text-sm transition-colors"
+                  >
+                    Cancel Transaction
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <!-- QR Card -->
+            <!-- NEW REF DESIGN KHQR Card -->
             <div
               v-else-if="qrImage && paymentStatus !== 'failed'"
-              class="w-full max-w-[320px] bg-white rounded-3xl shadow-2xl overflow-hidden relative transform transition-all hover:scale-[1.01]"
+              class="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-[320px] relative border border-gray-100"
             >
-              <!-- Red Top Strip -->
-              <div class="h-3 bg-red-600 w-full"></div>
-
-              <div class="p-6 text-center pb-4">
-                <p
-                  class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2"
+              <!-- Red Header -->
+              <div
+                class="bg-[#E61F25] h-14 flex items-center justify-center relative"
+              >
+                <!-- KHQR Text/Logo simulation -->
+                <h2
+                  class="text-white font-black text-2xl tracking-wider font-sans"
                 >
-                  Merchant
-                </p>
-                <h3 class="text-2xl font-black text-gray-900 leading-tight">
-                  {{ authStore.shop?.name || "Lucky Cafe" }}
-                </h3>
-
-                <div
-                  class="my-4 py-3 bg-gray-50 rounded-2xl border border-gray-100"
+                  KHQR
+                </h2>
+                <!-- Close X -->
+                <button
+                  @click="handleClose"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-1"
                 >
-                  <div class="flex items-baseline justify-center gap-1">
-                    <!-- For USD: $ 10.00 -->
-                    <template v-if="snapshotCurrency === 'USD'">
-                      <span
-                        class="text-4xl font-black text-gray-900 tracking-tight"
-                        >$</span
-                      >
-                      <span
-                        class="text-4xl font-black text-gray-900 tracking-tight"
-                        >{{
-                          formatSnapshotCurrency(snapshotAmount, "USD")
-                        }}</span
-                      >
-                    </template>
-                    <!-- For KHR: 4,000 ៛ -->
-                    <template v-else>
-                      <span
-                        class="text-4xl font-black text-gray-900 tracking-tight"
-                        >{{
-                          formatSnapshotCurrency(snapshotAmount, "KHR")
-                        }}</span
-                      >
-                      <span class="text-3xl font-bold text-gray-500 ml-1"
-                        >៛</span
-                      >
-                    </template>
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    ></path>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Card Body -->
+              <div class="p-5 pb-3">
+                <!-- Merchant Info -->
+                <div class="mb-2">
+                  <p
+                    class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5"
+                  >
+                    {{ authStore.shop?.name || "Merchant Name" }}
+                  </p>
+
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-xl font-black text-red-600">
+                      {{ snapshotCurrency === "USD" ? "$" : "៛" }}
+                    </span>
+                    <span
+                      class="text-3xl font-black text-gray-900 tracking-tight"
+                    >
+                      {{
+                        formatSnapshotCurrency(snapshotAmount, snapshotCurrency)
+                      }}
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              <!-- Dashed Line -->
-              <div class="relative w-full h-1">
-                <div class="absolute inset-0 flex items-center px-4">
+                <!-- Divider -->
+                <div
+                  class="w-full border-t-2 border-dashed border-gray-100 my-3 relative"
+                >
+                  <!-- Little circular cutouts for ticket look -->
                   <div
-                    class="w-full border-t-2 border-dashed border-gray-200"
+                    class="absolute -left-7 -top-2.5 w-5 h-5 rounded-full bg-gray-50 dark:bg-gray-900"
+                  ></div>
+                  <div
+                    class="absolute -right-7 -top-2.5 w-5 h-5 rounded-full bg-gray-50 dark:bg-gray-900"
                   ></div>
                 </div>
-                <div
-                  class="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gray-100 dark:bg-gray-900 rounded-full shadow-inner"
-                ></div>
-                <div
-                  class="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gray-100 dark:bg-gray-900 rounded-full shadow-inner"
-                ></div>
-              </div>
 
-              <div class="p-6 pt-6 flex flex-col items-center">
-                <div
-                  class="relative p-2 bg-white rounded-2xl border-2 border-gray-100 shadow-sm mb-4"
-                >
-                  <img
-                    :src="qrImage"
-                    alt="KHQR Code"
-                    class="w-48 h-48 object-contain rounded-lg"
-                  />
-                  <!-- Type Indicator in Center -->
+                <!-- QR Section -->
+                <div class="flex justify-center mb-4">
                   <div
-                    class="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    class="p-1.5 border-2 border-[#E61F25] rounded-xl relative"
                   >
+                    <!-- QR Image -->
+                    <img
+                      :src="qrImage"
+                      alt="KHQR Code"
+                      class="w-44 h-44 object-contain rounded-lg"
+                    />
+                    <!-- Center Logo Overlay -->
                     <div
-                      class="bg-white rounded-full p-1 shadow-md border border-gray-100"
+                      class="absolute inset-0 flex items-center justify-center pointer-events-none"
                     >
-                      <div
-                        class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center"
-                      >
-                        <span
-                          class="text-white text-xl font-bold leading-none pb-0.5"
-                          >{{ snapshotCurrency === "USD" ? "$" : "៛" }}</span
+                      <div class="bg-white p-0.5 rounded-full shadow-sm">
+                        <!-- Use Shop Logo if available -->
+                        <div
+                          v-if="authStore.shop?.logo"
+                          class="w-9 h-9 rounded-full overflow-hidden border border-gray-100 bg-white"
                         >
+                          <img
+                            :src="authStore.shop.logo"
+                            alt="Logo"
+                            class="w-full h-full object-cover"
+                          />
+                        </div>
+                        <!-- Fallback to Currency Symbol -->
+                        <div
+                          v-else
+                          class="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center text-white font-bold text-[8px]"
+                        >
+                          {{ snapshotCurrency === "USD" ? "$" : "៛" }}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="text-center w-full">
-                  <div
-                    class="text-red-500 font-bold text-lg animate-pulse mb-1"
-                  >
-                    {{ formattedTimer }}
+                <!-- Footer / Timer -->
+                <div class="text-center pb-2">
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <p class="text-red-500 text-xs font-bold animate-pulse">
+                      Expires in {{ formattedTimer }}
+                    </p>
+
+                    <button
+                      @click="cancelKhqr"
+                      class="text-xs text-gray-400 hover:text-red-500 font-bold transition-colors"
+                    >
+                      Cancel Transaction
+                    </button>
                   </div>
-                  <p class="text-xs text-gray-400">Scan within this time</p>
                 </div>
               </div>
             </div>
@@ -874,76 +894,80 @@ onUnmounted(() => {
             <!-- Error State -->
             <div
               v-else-if="paymentStatus === 'failed'"
-              class="text-center p-8 bg-white rounded-2xl shadow-lg border border-red-100 max-w-xs mt-12"
+              class="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-[320px] relative border border-gray-100"
             >
+              <!-- Red Header -->
               <div
-                class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"
+                class="bg-[#E61F25] h-14 flex items-center justify-center relative"
               >
-                <svg
-                  class="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <h2 class="text-white font-black text-2xl tracking-wider">
+                  KHQR
+                </h2>
+                <!-- Close X -->
+                <button
+                  @click="handleClose"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors p-1"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
+                  <svg
+                    class="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    ></path>
+                  </svg>
+                </button>
               </div>
-              <h3 class="font-bold text-gray-900 text-lg mb-2">
-                Generation Failed
-              </h3>
-              <p class="text-gray-500 text-sm mb-6">
-                Could not generate KHQR code. Please check your internet
-                connection or shop settings.
-              </p>
-              <div class="flex flex-col gap-3">
-                <button
-                  @click="handleConfirm"
-                  class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition"
+
+              <div class="p-8 flex flex-col items-center text-center">
+                <div
+                  class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4"
                 >
-                  Retry
-                </button>
-                <button
-                  @click="
-                    qrString = '';
-                    paymentStatus = 'pending';
-                  "
-                  class="text-gray-500 font-bold hover:text-gray-700 hover:underline"
-                >
-                  Go Back
-                </button>
+                  <svg
+                    class="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <h3 class="font-bold text-gray-900 text-xl mb-2">
+                  Connection Failed
+                </h3>
+                <p class="text-gray-500 text-sm mb-6 leading-relaxed">
+                  Unable to generate KHQR code. Please check your internet
+                  connection.
+                </p>
+                <div class="w-full flex flex-col gap-3">
+                  <button
+                    @click="handleConfirm"
+                    class="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-200"
+                  >
+                    Try Again
+                  </button>
+                  <button
+                    @click="
+                      qrString = '';
+                      paymentStatus = 'pending';
+                    "
+                    class="text-gray-400 font-bold hover:text-gray-600 text-sm transition-colors"
+                  >
+                    Go Back
+                  </button>
+                </div>
               </div>
             </div>
-
-            <button
-              v-if="
-                !qrLoading &&
-                !paymentStatus.includes('success') &&
-                !paymentStatus.includes('expired') &&
-                qrImage
-              "
-              @click="cancelKhqr"
-              class="mt-8 text-gray-400 hover:text-red-500 font-bold text-sm transition-colors flex items-center gap-2"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-              Cancel Transaction
-            </button>
           </div>
         </div>
       </div>

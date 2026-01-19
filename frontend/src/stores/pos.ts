@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import apiClient, { guestApi } from "@/services/api";
+import apiClient from "@/api";
+import guestApi from "@/api/guest";
 
 interface PosCartItem {
   id: string; // temporary frontend ID

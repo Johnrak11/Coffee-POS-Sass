@@ -57,11 +57,12 @@ class BakongService
      * @param string $md5
      * @param string|null $telegramChatId
      */
-    public function checkTransactionStatus(string $md5, ?string $telegramChatId = null)
+    public function checkTransactionStatus(string $md5, ?string $telegramChatId = null, ?string $merchantName = null)
     {
         $payload = [
             'md5' => $md5,
-            'telegram_chat_id' => $telegramChatId
+            'telegram_chat_id' => $telegramChatId,
+            'merchant_name' => $merchantName
         ];
 
         $response = Http::withHeaders([

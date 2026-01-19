@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import apiClient from "@/services/api";
+import apiClient from "@/api";
 import { toast } from "vue-sonner";
-import BaseInput from "@/components/ui/BaseInput.vue";
-import BaseButton from "@/components/ui/BaseButton.vue";
+import { BaseInput, BaseButton } from "@/components/common";
 
 const router = useRouter();
 const email = ref("");

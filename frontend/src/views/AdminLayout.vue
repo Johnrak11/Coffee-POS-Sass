@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
-import { useThemeStore } from "@/stores/theme";
+import { useUIStore } from "@/stores/ui";
 import { useRouter, useRoute } from "vue-router";
 
 const authStore = useAuthStore();
-const themeStore = useThemeStore();
+const uiStore = useUIStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -64,7 +64,7 @@ const navItems = [
     <!-- Sidebar -->
     <aside
       class="flex flex-col bg-app-sidebar border-r border-app-border transition-all duration-300 z-20 shadow-sm"
-      :class="themeStore.isSidebarCollapsed ? 'w-20' : 'w-64'"
+      :class="uiStore.sidebarCollapsed ? 'w-20' : 'w-64'"
     >
       <!-- Header -->
       <div
@@ -74,16 +74,16 @@ const navItems = [
           <img
             v-if="authStore.shop?.logo_url"
             :src="authStore.shop.logo_url"
-            class="min-w-[40px] w-10 h-10 rounded-xl object-cover shadow-lg shadow-orange-200/20"
+            class="min-w-[40px] w-10 h-10 rounded-xl object-cover shadow-lg shadow-primary-200/20 dark:shadow-primary-900/20"
           />
           <div
             v-else
-            class="min-w-[40px] w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-orange-200/20"
+            class="min-w-[40px] w-10 h-10 bg-primary-600 dark:bg-primary-700 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-primary-200/20 dark:shadow-primary-900/20"
           >
             {{ authStore.shop?.name?.[0] || "A" }}
           </div>
           <div
-            v-show="!themeStore.isSidebarCollapsed"
+            v-show="!uiStore.sidebarCollapsed"
             class="whitespace-nowrap transition-opacity duration-300"
           >
             <h1
@@ -100,8 +100,8 @@ const navItems = [
         </div>
         <!-- Collapse Button -->
         <button
-          v-show="!themeStore.isSidebarCollapsed"
-          @click="themeStore.toggleSidebar"
+          v-show="!uiStore.sidebarCollapsed"
+          @click="uiStore.toggleSidebar()"
           class="p-1 text-app-muted hover:text-app-text rounded-lg hover:bg-app-bg transition-colors"
         >
           <svg
@@ -122,11 +122,11 @@ const navItems = [
 
       <!-- Expand Button (When collapsed) -->
       <div
-        v-show="themeStore.isSidebarCollapsed"
+        v-show="uiStore.sidebarCollapsed"
         class="w-full flex justify-center py-2"
       >
         <button
-          @click="themeStore.toggleSidebar"
+          @click="uiStore.toggleSidebar()"
           class="p-2 text-app-muted hover:text-app-text rounded-lg hover:bg-app-bg transition-colors"
         >
           <svg
@@ -154,9 +154,9 @@ const navItems = [
           :class="[
             'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative',
             route.path === item.path
-              ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 font-bold'
+              ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold'
               : 'text-app-muted hover:bg-app-bg hover:text-app-text',
-            themeStore.isSidebarCollapsed ? 'justify-center' : '',
+            uiStore.sidebarCollapsed ? 'justify-center' : '',
           ]"
         >
           <svg
@@ -172,15 +172,13 @@ const navItems = [
               :d="item.icon"
             />
           </svg>
-          <span
-            v-if="!themeStore.isSidebarCollapsed"
-            class="whitespace-nowrap"
-            >{{ item.name }}</span
-          >
+          <span v-if="!uiStore.sidebarCollapsed" class="whitespace-nowrap">{{
+            item.name
+          }}</span>
 
           <!-- Tooltip -->
           <div
-            v-if="themeStore.isSidebarCollapsed"
+            v-if="uiStore.sidebarCollapsed"
             class="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
           >
             {{ item.name }}
@@ -192,12 +190,12 @@ const navItems = [
       <div class="p-4 w-full border-t border-app-border">
         <!-- Theme Toggle -->
         <button
-          @click="themeStore.toggleTheme"
+          @click="uiStore.toggleTheme()"
           class="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl text-app-muted hover:bg-app-bg hover:text-app-text transition-colors"
-          :class="themeStore.isSidebarCollapsed ? 'justify-center' : ''"
+          :class="uiStore.sidebarCollapsed ? 'justify-center' : ''"
         >
           <svg
-            v-if="themeStore.isDark"
+            v-if="uiStore.theme === 'dark'"
             class="w-6 h-6 shrink-0"
             fill="none"
             stroke="currentColor"
@@ -221,20 +219,20 @@ const navItems = [
               stroke-linecap="round"
               stroke-linejoin="round"
               stroke-width="2"
-              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9 0 008.354-5.646z"
             />
           </svg>
-          <span v-if="!themeStore.isSidebarCollapsed">
-            {{ themeStore.isDark ? "Light" : "Dark" }} Mode
+          <span v-if="!uiStore.sidebarCollapsed">
+            {{ uiStore.theme === "dark" ? "Light" : "Dark" }} Mode
           </span>
         </button>
 
         <div
-          v-if="!themeStore.isSidebarCollapsed"
+          v-if="!uiStore.sidebarCollapsed"
           class="p-3 bg-app-bg rounded-2xl flex items-center gap-3 mb-3"
         >
           <div
-            class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs"
+            class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xs"
           >
             {{ authStore.user?.name?.[0] || "U" }}
           </div>
@@ -250,7 +248,7 @@ const navItems = [
         <button
           @click="logout"
           class="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-app-border text-app-muted font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all duration-200"
-          :class="themeStore.isSidebarCollapsed ? 'border-0' : ''"
+          :class="uiStore.sidebarCollapsed ? 'border-0' : ''"
         >
           <svg
             class="w-5 h-5 shrink-0"
@@ -265,7 +263,7 @@ const navItems = [
               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
             />
           </svg>
-          <span v-if="!themeStore.isSidebarCollapsed">Logout</span>
+          <span v-if="!uiStore.sidebarCollapsed">Logout</span>
         </button>
       </div>
     </aside>
