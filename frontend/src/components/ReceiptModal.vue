@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   show: boolean;
@@ -12,10 +13,16 @@ const props = defineProps<{
     shopName?: string;
     date?: string;
     currency?: "USD" | "KHR";
+    shopAddress?: string;
+    shopPhone?: string;
+    receiptFooter?: string;
+    wifiSsid?: string;
+    wifiPassword?: string;
   };
 }>();
 
 const emit = defineEmits(["close", "print"]);
+const { t } = useI18n();
 
 const formattedDate = computed(() => {
   return props.receiptData.date || new Date().toLocaleString();
@@ -51,192 +58,228 @@ function calculateItemTotal(item: any) {
 </script>
 
 <template>
-  <div
-    v-if="show"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 print:p-0"
-  >
-    <!-- Backdrop (Hide in print) -->
+  <Teleport to="body">
     <div
-      @click="$emit('close')"
-      class="absolute inset-0 bg-black/60 backdrop-blur-sm print:hidden"
-    ></div>
-
-    <!-- Receipt Modal -->
-    <div
-      class="relative bg-app-surface w-full max-w-sm rounded-lg shadow-2xl overflow-hidden print:shadow-none print:w-full print:max-w-none border border-app-border"
+      v-if="show"
+      class="fixed inset-0 z-[9999] flex items-center justify-center p-4 print:p-0 receipt-modal-wrapper"
     >
-      <!-- Print Actions (Hide in print) -->
+      <!-- Backdrop (Hide in print) -->
       <div
-        class="bg-app-bg p-4 flex justify-between items-center print:hidden border-b border-app-border"
+        @click="$emit('close')"
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm print:hidden"
+      ></div>
+
+      <!-- Receipt Modal -->
+      <div
+        class="relative bg-app-surface w-full max-w-sm rounded-lg shadow-2xl overflow-hidden border border-app-border print:border-none print:shadow-none print:w-full print:max-w-none print:static"
       >
-        <h3 class="font-bold text-app-text">Receipt Preview</h3>
-        <div class="flex gap-2">
-          <button
-            @click="$emit('close')"
-            class="px-4 py-2 text-app-muted hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
-          >
-            Close
-          </button>
-          <button
-            @click="handlePrint"
-            class="px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 rounded-lg text-sm font-bold flex items-center gap-2"
-          >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        <!-- Print Actions (Hide in print) -->
+        <div
+          class="bg-app-bg p-4 flex justify-between items-center print:hidden border-b border-app-border"
+        >
+          <h3 class="font-bold text-app-text">{{ $t("receipt.preview") }}</h3>
+          <div class="flex gap-2">
+            <button
+              @click="$emit('close')"
+              class="px-4 py-2 text-app-muted hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-              ></path>
-            </svg>
-            Print
-          </button>
-        </div>
-      </div>
-
-      <!-- Actual Receipt Content -->
-      <div
-        class="p-6 bg-white text-gray-900 font-mono text-sm leading-relaxed receipt-content"
-      >
-        <div class="text-center mb-6">
-          <h1 class="text-xl font-bold uppercase mb-2">
-            {{ receiptData.shopName || "Lucky Cafe" }}
-          </h1>
-          <p class="text-xs text-gray-500">Phnom Penh, Cambodia</p>
-          <p class="text-xs text-gray-500">Tel: 012 345 678</p>
-        </div>
-
-        <div class="border-b border-dashed border-gray-300 pb-4 mb-4">
-          <div class="flex justify-between">
-            <span>Order #:</span>
-            <span class="font-bold">{{
-              receiptData.orderNumber || "PENDING"
-            }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Date:</span>
-            <span>{{ formattedDate }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Cashier:</span>
-            <span>Staff</span>
+              {{ $t("receipt.close") }}
+            </button>
+            <button
+              @click="handlePrint"
+              class="px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 rounded-lg text-sm font-bold flex items-center gap-2"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                ></path>
+              </svg>
+              {{ $t("receipt.print") }}
+            </button>
           </div>
         </div>
 
-        <div class="mb-4">
-          <table class="w-full text-left">
-            <thead>
-              <tr class="border-b border-gray-300">
-                <th class="py-1 w-1/2">Item</th>
-                <th class="py-1 text-center">Qty</th>
-                <th class="py-1 text-right">Amt</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr v-for="item in receiptData.items" :key="item.id">
-                <td class="py-2 pr-2 align-top">
-                  <div class="font-bold">{{ item.product.name }}</div>
-                  <div v-if="item.variant" class="text-xs text-gray-500">
-                    {{ item.variant.name }}: {{ item.variant.option_name }}
-                  </div>
-                  <div
-                    v-if="item.options && item.options.length > 0"
-                    class="text-xs text-gray-500 mt-0.5"
-                  >
-                    <div v-for="(opt, idx) in item.options" :key="idx">
-                      + {{ opt.group_name }}: {{ opt.option_name }}
+        <!-- Actual Receipt Content -->
+        <div
+          class="p-6 print:p-0 bg-white text-gray-900 font-mono text-sm leading-relaxed receipt-content"
+        >
+          <div class="text-center mb-6">
+            <h1 class="text-xl font-bold uppercase mb-2">
+              {{ receiptData.shopName || "Lucky Cafe" }}
+            </h1>
+            <div class="text-xs text-center flex flex-col items-center">
+              <p v-if="receiptData.shopAddress">
+                {{ receiptData.shopAddress }}
+              </p>
+              <p v-else>Phnom Penh, Cambodia</p>
+              
+              <p v-if="receiptData.shopPhone">
+                Tel: {{ receiptData.shopPhone }}
+              </p>
+              <p v-else>Tel: 012 345 678</p>
+            </div>
+          </div>
+
+          <div class="border-b border-dashed border-gray-300 pb-4 mb-4">
+            <div class="flex justify-between">
+              <span>{{ $t("receipt.orderNumber") }}</span>
+              <span class="font-bold">{{
+                receiptData.orderNumber || "PENDING"
+              }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>{{ $t("receipt.date") }}</span>
+              <span>{{ formattedDate }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>{{ $t("receipt.cashier") }}</span>
+              <span>{{ $t("nav.staff") }}</span>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-gray-300">
+                  <th class="py-1 w-1/2">{{ $t("receipt.item") }}</th>
+                  <th class="py-1 text-center">{{ $t("receipt.qty") }}</th>
+                  <th class="py-1 text-right">{{ $t("receipt.amount") }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="item in receiptData.items" :key="item.id">
+                  <td class="py-2 pr-2 align-top">
+                    <div class="font-bold">{{ item.product.name }}</div>
+                    <div v-if="item.variant" class="text-xs text-gray-500">
+                      {{ item.variant.name }}: {{ item.variant.option_name }}
                     </div>
-                  </div>
-                </td>
-                <td class="py-2 text-center align-top">{{ item.quantity }}</td>
-                <td class="py-2 text-right align-top">
-                  {{ calculateItemTotal(item) }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                    <div
+                      v-if="item.options && item.options.length > 0"
+                      class="text-xs text-gray-500 mt-0.5"
+                    >
+                      <div v-for="(opt, idx) in item.options" :key="idx">
+                        + {{ opt.group_name }}: {{ opt.option_name }}
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-2 text-center align-top">{{ item.quantity }}</td>
+                  <td class="py-2 text-right align-top">
+                    {{ calculateItemTotal(item) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-        <div class="border-t border-dashed border-gray-300 pt-4 space-y-1">
-          <div class="flex justify-between text-base font-bold">
-            <!-- If paid in KHR, we should probably show the KHR total? -->
-            <!-- Or show USD Total and then "Paid in KHR" -->
-            <!-- Let's show the Currency User Paid in for the 'TOTAL' line if possible, or handle conversion display -->
-            <span>TOTAL</span>
-            <span
-              >{{ currencySymbol
-              }}{{
-                receiptData.currency === "KHR"
-                  ? formatAmount(receiptData.cashReceived - receiptData.change) // Total Paid effectively
-                  : formatAmount(receiptData.total)
-              }}</span
+          <div class="border-t border-dashed border-gray-300 pt-4 space-y-1">
+            <div class="flex justify-between text-base font-bold">
+              <span>{{ $t("receipt.total") }}</span>
+              <span
+                >{{ currencySymbol
+                }}{{
+                  receiptData.currency === "KHR"
+                    ? formatAmount(receiptData.cashReceived - receiptData.change)
+                    : formatAmount(receiptData.total)
+                }}</span
+              >
+            </div>
+            <div
+              v-if="receiptData.cashReceived"
+              class="flex justify-between text-xs text-gray-600"
             >
-          </div>
-          <div
-            v-if="receiptData.cashReceived"
-            class="flex justify-between text-xs text-gray-600"
-          >
-            <span>Cash Received</span>
-            <span
-              >{{ currencySymbol
-              }}{{ formatAmount(receiptData.cashReceived) }}</span
+              <span>{{ $t("receipt.cashReceived") }}</span>
+              <span
+                >{{ currencySymbol
+                }}{{ formatAmount(receiptData.cashReceived) }}</span
+              >
+            </div>
+            <div
+              v-if="receiptData.change !== undefined"
+              class="flex justify-between text-xs text-gray-600"
             >
+              <span>{{ $t("receipt.change") }}</span>
+              <span
+                >{{ currencySymbol }}{{ formatAmount(receiptData.change) }}</span
+              >
+            </div>
           </div>
-          <div
-            v-if="receiptData.change !== undefined"
-            class="flex justify-between text-xs text-gray-600"
-          >
-            <span>Change</span>
-            <span
-              >{{ currencySymbol }}{{ formatAmount(receiptData.change) }}</span
-            >
-          </div>
-        </div>
 
-        <div class="mt-8 text-center text-xs">
-          <p>
-            Thank you for visiting {{ receiptData.shopName || "Lucky Cafe" }}!
-          </p>
-          <p class="mt-2">Free WiFi: Lucky-Guest / pwd: 12345678</p>
-          <div class="mt-4 border-t pt-2 text-[10px] text-gray-400">
-            Powered by Coffee-POS SaaS
+          <div class="mt-8 text-center text-xs">
+            <p class="whitespace-pre-wrap">
+              {{
+                receiptData.receiptFooter ||
+                "Thank you for visiting " +
+                  (receiptData.shopName || "Lucky Cafe") +
+                  "!"
+              }}
+            </p>
+            <p
+              v-if="receiptData.wifiSsid"
+              class="mt-2 border-t border-dashed border-gray-200 pt-2"
+            >
+              <strong>{{ $t("settings.wifiSsid") }}:</strong>
+              {{ receiptData.wifiSsid }} <br />
+              <strong>{{ $t("receipt.password") }}:</strong>
+              {{ receiptData.wifiPassword }}
+            </p>
+            <div class="mt-4 border-t pt-2 text-[10px] text-gray-400">
+              {{ $t("receipt.poweredBy") }}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
-<style scoped>
+<style>
 @media print {
-  @page {
-    margin: 0;
-    size: 80mm 297mm;
+  /* Hide the entire app */
+  #app {
+    display: none !important;
   }
 
-  /* Thermal paper size approx */
-  body * {
-    visibility: hidden;
+  /* Reset body size/overscroll */
+  body,
+  html {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
   }
 
-  .receipt-content,
-  .receipt-content * {
-    visibility: visible;
+  /* Force the modal wrapper to be visible */
+  .receipt-modal-wrapper {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
+  /* Ensure content is strictly black and white */
   .receipt-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 10px;
-    box-shadow: none;
+    width: 100% !important;
+    /* max-width: 80mm !important; Optional: constrain width if needed */
+    margin: 0 auto !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  .receipt-content * {
+    color: black !important;
+    visibility: visible !important;
   }
 }
 </style>

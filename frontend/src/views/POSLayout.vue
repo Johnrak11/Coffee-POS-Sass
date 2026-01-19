@@ -2,11 +2,18 @@
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
 import { useRouter, useRoute } from "vue-router";
+import { useUIStore } from "@/stores/ui";
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
+const uiStore = useUIStore();
 const router = useRouter();
 const route = useRoute();
+
+function toggleLanguage() {
+  const newLocale = uiStore.currentLocale === "en" ? "kh" : "en";
+  uiStore.setLocale(newLocale);
+}
 
 function logout() {
   authStore.logoutUser();
@@ -28,16 +35,31 @@ function logout() {
         class="p-4 flex items-center justify-between border-b border-app-border"
       >
         <div class="flex items-center gap-3 overflow-hidden">
+          <img
+            v-if="authStore.shop?.logo_url"
+            :src="authStore.shop.logo_url"
+            class="min-w-[40px] w-10 h-10 rounded-xl object-cover shadow-lg shadow-primary-200/20 dark:shadow-primary-900/20"
+          />
           <div
-            class="min-w-[40px] w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center font-bold text-xl text-white shadow-lg shadow-orange-900/50"
+            v-else
+            class="min-w-[40px] w-10 h-10 bg-primary-600 dark:bg-primary-700 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-primary-200/20 dark:shadow-primary-900/20"
           >
-            P
+            {{ authStore.shop?.name?.[0] || "P" }}
           </div>
           <div
             v-show="!themeStore.isSidebarCollapsed"
             class="whitespace-nowrap transition-opacity duration-300"
           >
-            <span class="font-bold text-lg text-app-text">POS System</span>
+            <h1
+              class="font-bold text-app-text leading-tight truncate max-w-[140px]"
+            >
+              {{ authStore.shop?.name || "POS System" }}
+            </h1>
+            <p
+              class="text-[10px] text-app-muted font-medium uppercase tracking-wider truncate max-w-[120px]"
+            >
+              {{ authStore.user?.role || "Staff" }}
+            </p>
           </div>
         </div>
 
@@ -115,14 +137,14 @@ function logout() {
           <span
             v-if="!themeStore.isSidebarCollapsed"
             class="font-medium whitespace-nowrap"
-            >Register</span
+            >{{ $t("pos.pointOfSale") }}</span
           >
           <!-- Tooltip -->
           <div
             v-if="themeStore.isSidebarCollapsed"
             class="absolute left-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
           >
-            Register
+            {{ $t("pos.pointOfSale") }}
           </div>
         </router-link>
 
@@ -152,13 +174,13 @@ function logout() {
           <span
             v-if="!themeStore.isSidebarCollapsed"
             class="font-medium whitespace-nowrap"
-            >Kitchen</span
+            >{{ $t("nav.kitchen") }}</span
           >
           <div
             v-if="themeStore.isSidebarCollapsed"
             class="absolute left-full ml-3 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
           >
-            Kitchen
+            {{ $t("nav.kitchen") }}
           </div>
         </router-link>
 
@@ -188,13 +210,13 @@ function logout() {
           <span
             v-if="!themeStore.isSidebarCollapsed"
             class="font-medium whitespace-nowrap"
-            >Orders</span
+            >{{ $t("nav.orders") }}</span
           >
           <div
             v-if="themeStore.isSidebarCollapsed"
             class="absolute left-full ml-3 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
           >
-            Orders
+            {{ $t("nav.orders") }}
           </div>
         </router-link>
 
@@ -231,13 +253,13 @@ function logout() {
           <span
             v-if="!themeStore.isSidebarCollapsed"
             class="font-medium whitespace-nowrap"
-            >Admin</span
+            >{{ $t("nav.dashboard") }}</span
           >
           <div
             v-if="themeStore.isSidebarCollapsed"
             class="absolute left-full ml-3 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
           >
-            Admin
+            {{ $t("nav.dashboard") }}
           </div>
         </router-link>
       </nav>
@@ -278,7 +300,36 @@ function logout() {
             />
           </svg>
           <span v-if="!themeStore.isSidebarCollapsed" class="font-medium">
-            {{ themeStore.isDark ? "Light" : "Dark" }} Mode
+            {{
+              themeStore.isDark
+                ? $t("settings.lightMode")
+                : $t("settings.darkMode")
+            }}
+          </span>
+        </button>
+
+        <!-- Language Toggle -->
+        <button
+          @click="toggleLanguage"
+          class="w-full flex items-center gap-3 p-2 mb-2 text-app-muted hover:text-app-text transition-colors"
+          :class="themeStore.isSidebarCollapsed ? 'justify-center' : ''"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-6 h-6 shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+            />
+          </svg>
+          <span v-if="!themeStore.isSidebarCollapsed" class="font-medium">
+            {{ uiStore.currentLocale === "en" ? "English" : "ខ្មែរ" }}
           </span>
         </button>
 
@@ -300,9 +351,9 @@ function logout() {
               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
             ></path>
           </svg>
-          <span v-if="!themeStore.isSidebarCollapsed" class="hidden lg:block"
-            >Logout</span
-          >
+          <span v-if="!themeStore.isSidebarCollapsed" class="hidden lg:block">{{
+            $t("nav.logout")
+          }}</span>
         </button>
       </div>
     </aside>

@@ -143,13 +143,13 @@ onMounted(() => {
         <h1
           class="text-3xl font-bold text-text-primary dark:text-white flex items-center gap-2"
         >
-          ⚙️ Option Sets
+          Option Sets
         </h1>
         <p class="text-text-secondary dark:text-gray-400 mt-1">
           Manage reusable preset options for your products
         </p>
       </div>
-      <BaseButton variant="primary" @click="openModal()">
+      <BaseButton variant="primary" size="md" @click="openModal()">
         + New Option Set
       </BaseButton>
     </div>

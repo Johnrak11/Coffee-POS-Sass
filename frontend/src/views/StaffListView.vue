@@ -121,13 +121,13 @@ function getRoleBadge(role: string) {
         <h1
           class="text-3xl font-bold text-text-primary dark:text-white flex items-center gap-2"
         >
-          👥 {{ t("nav.staff") || "Staff Management" }}
+          {{ t("nav.staff") || "Staff Management" }}
         </h1>
         <p class="text-text-secondary dark:text-gray-400 mt-1">
           Manage your team members and their shop access.
         </p>
       </div>
-      <BaseButton variant="primary" size="lg" @click="openAddModal">
+      <BaseButton variant="primary" size="md" @click="openAddModal">
         + New Member
       </BaseButton>
     </div>

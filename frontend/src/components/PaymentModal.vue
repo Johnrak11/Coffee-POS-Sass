@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted, watch } from "vue";
+import { ref, computed, onUnmounted, onMounted, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { usePosStore } from "@/stores/pos";
 import apiClient from "@/api";
+import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   show: boolean;
@@ -14,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits(["close", "confirm", "success", "print"]);
 const authStore = useAuthStore();
 const posStore = usePosStore();
+const { t } = useI18n();
 
 const currency = ref<"USD" | "KHR">("USD");
 const paymentMethod = ref<"DASHBOARD" | "KHQR">(
@@ -359,7 +361,56 @@ function cancelKhqr() {
   // if (!props.existingOrder) currentOrder.value = null; // REMOVED
 }
 
+
+function handleKeydown(e: KeyboardEvent) {
+  if (!props.show) return;
+
+  // Escape to Close (Already handled usually, but ensuring)
+  if (e.key === "Escape") {
+    handleClose();
+    return;
+  }
+
+  // Only handle input for DASHBOARD (Cash) method
+  if (paymentMethod.value !== "DASHBOARD") return;
+
+  // Numbers 0-9
+  if (/^[0-9]$/.test(e.key)) {
+    appendNumber(e.key);
+    return;
+  }
+
+  // Dot
+  if (e.key === ".") {
+    appendNumber(".");
+    return;
+  }
+
+  // Backspace
+  if (e.key === "Backspace") {
+    receivedAmount.value = receivedAmount.value.slice(0, -1);
+    return;
+  }
+
+  // Enter to Confirm
+  if (e.key === "Enter") {
+    handleConfirm();
+    return;
+  }
+
+  // Delete to Clear
+  if (e.key === "Delete") {
+    clear();
+    return;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", handleKeydown);
+});
+
 onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeydown);
   stopPolling();
   stopTimer();
 });
@@ -391,7 +442,12 @@ onUnmounted(() => {
           "
         >
           <div
-            class="bg-gray-900 text-white p-5 text-center relative overflow-hidden"
+            class="transition-colors duration-300 text-white p-5 text-center relative overflow-hidden"
+            :class="
+              change > 0 && paymentMethod === 'DASHBOARD'
+                ? 'bg-emerald-600'
+                : 'bg-gray-900'
+            "
           >
             <!-- Close Button -->
             <button
@@ -449,13 +505,21 @@ onUnmounted(() => {
             </div>
 
             <h2 class="relative z-10 text-xl font-medium opacity-80 mb-1">
-              Total to Pay
+              {{
+                change > 0 && paymentMethod === "DASHBOARD"
+                  ? $t("pos.change")
+                  : $t("pos.totalToPay")
+              }}
             </h2>
             <div
               class="relative z-10 text-4xl font-black font-display tracking-tight text-shadow-sm"
             >
               {{ currency === "USD" ? "$" : "៛" }}
-              {{ formatCurrency(totalInCurrency) }}
+              {{
+                change > 0 && paymentMethod === "DASHBOARD"
+                  ? formatCurrency(change)
+                  : formatCurrency(totalInCurrency)
+              }}
             </div>
 
             <!-- Payment Method Toggle -->
@@ -469,7 +533,7 @@ onUnmounted(() => {
                     : 'border-gray-700 text-gray-400 hover:bg-gray-800',
                 ]"
               >
-                Cash Payment
+                {{ $t("payment.cashPayment") }}
               </button>
               <button
                 @click="selectMethod('KHQR')"
@@ -480,7 +544,7 @@ onUnmounted(() => {
                     : 'border-gray-700 text-gray-400 hover:bg-gray-800',
                 ]"
               >
-                KHQR Only
+                {{ $t("payment.khqrOnly") }}
               </button>
             </div>
           </div>
@@ -488,7 +552,7 @@ onUnmounted(() => {
           <div class="p-5">
             <div class="mb-5">
               <label class="block text-xs font-bold text-app-muted mb-1.5"
-                >Received Amount ({{ currency }})</label
+                >{{ $t("pos.cashReceived") }} ({{ currency }})</label
               >
               <div class="flex gap-2">
                 <div
@@ -508,21 +572,12 @@ onUnmounted(() => {
                   @click="exactAmount"
                   class="px-4 py-2 bg-app-border rounded-xl font-bold text-app-muted hover:text-app-text hover:bg-gray-300 dark:hover:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-700 transition-colors"
                 >
-                  Exact
+                  {{ $t("common.exact") }}
                 </button>
               </div>
             </div>
 
-            <div
-              v-if="paymentMethod === 'DASHBOARD' && change > 0"
-              class="mb-6 p-4 bg-green-50 text-green-800 rounded-xl flex justify-between items-center animate-pulse border border-green-200"
-            >
-              <span class="font-bold">CHANGE DUE:</span>
-              <span class="text-3xl font-black">
-                {{ currency === "USD" ? "$" : "៛" }}
-                {{ formatCurrency(change) }}
-              </span>
-            </div>
+
 
             <!-- Numpad (Only for Cash) -->
             <div
@@ -567,13 +622,13 @@ onUnmounted(() => {
                 <span
                   class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"
                 ></span>
-                Secure KHQR Payment
+                {{ $t("payment.secureKhqr") }}
               </p>
               <p>
-                Generate a secure, dynamic KHQR code for
+                {{ $t("payment.khqrDesc") }}
                 <b class="text-lg"
                   >{{ formatCurrency(totalInCurrency) }} {{ currency }}</b
-                >. Customer will scan this code to pay.
+                >.
               </p>
             </div>
 
@@ -586,12 +641,14 @@ onUnmounted(() => {
                 paymentMethod === 'KHQR'
                   ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-500 hover:to-rose-500 shadow-red-500/30'
                   : isValid
-                  ? 'bg-gradient-to-r from-primary-600 to-indigo-600 text-white hover:from-primary-500 hover:to-indigo-500 shadow-primary-500/30'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-500/30'
                   : 'bg-app-bg text-app-muted cursor-not-allowed border border-app-border',
               ]"
             >
               {{
-                paymentMethod === "KHQR" ? "Confirm to Pay" : "Complete Payment"
+                paymentMethod === "KHQR"
+                  ? $t("payment.confirmToPay")
+                  : $t("pos.completePayment")
               }}
             </button>
           </div>
@@ -629,10 +686,10 @@ onUnmounted(() => {
             <h2
               class="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight"
             >
-              Payment Successful!
+              {{ $t("common.paymentSuccessful") }}
             </h2>
             <p class="text-gray-500 mb-10 max-w-xs mx-auto font-medium">
-              Transaction Completed Successfully
+              {{ $t("common.transactionCompleted") }}
             </p>
 
             <div class="flex flex-col gap-3 w-full max-w-xs">
@@ -684,9 +741,11 @@ onUnmounted(() => {
                 class="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4"
               ></div>
               <p class="text-gray-900 font-bold text-lg mb-1">
-                Generating secure QR...
+                {{ $t("payment.generatingQr") }}
               </p>
-              <p class="text-gray-500 text-xs">Connecting to Bakong</p>
+              <p class="text-gray-500 text-xs">
+                {{ $t("payment.connectingBakong") }}
+              </p>
             </div>
 
             <!-- Expired State -->
@@ -740,9 +799,11 @@ onUnmounted(() => {
                     />
                   </svg>
                 </div>
-                <h3 class="font-bold text-gray-900 text-xl mb-2">QR Expired</h3>
+                <h3 class="font-bold text-gray-900 text-xl mb-2">
+                  {{ $t("payment.qrExpired") }}
+                </h3>
                 <p class="text-gray-500 text-sm mb-6 leading-relaxed">
-                  Session timed out.
+                  {{ $t("payment.sessionTimeout") }}
                 </p>
                 <div class="w-full flex flex-col gap-3">
                   <button

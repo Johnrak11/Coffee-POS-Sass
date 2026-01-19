@@ -52,8 +52,11 @@ apiClient.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           // Unauthorized - clear auth and redirect to login
-          localStorage.removeItem("staff_token");
-          window.location.href = "/login";
+          // but IGNORE if we are actually trying to login (which returns 401 on failure)
+          if (!error.config.url?.endsWith("/auth")) {
+            localStorage.removeItem("staff_token");
+            window.location.href = "/login";
+          }
           break;
         case 403:
           console.error("Forbidden access");

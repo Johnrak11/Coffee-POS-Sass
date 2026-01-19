@@ -97,6 +97,11 @@ function handlePrint(order: any) {
         : 0,
     orderNumber: order.order_number,
     shopName: authStore.shop?.name,
+    shopAddress: authStore.shop?.address,
+    shopPhone: authStore.shop?.phone,
+    receiptFooter: authStore.shop?.receipt_footer,
+    wifiSsid: authStore.shop?.wifi_ssid,
+    wifiPassword: authStore.shop?.wifi_password,
     date: new Date(order.created_at).toLocaleString(),
     currency: order.payment_currency || "USD",
   };

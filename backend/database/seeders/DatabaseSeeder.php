@@ -18,6 +18,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ShopSeeder::class,
             MenuSeeder::class,
+            OptionSetSeeder::class,
+            SuperAdminSeeder::class,
+            // PromoteSuperAdminSeeder::class,
+
         ]);
     }
 }

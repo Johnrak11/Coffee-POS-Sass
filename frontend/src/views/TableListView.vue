@@ -14,6 +14,7 @@ const tables = ref<any[]>([]);
 const loading = ref(true);
 const showModal = ref(false);
 const editingTable = ref<any>(null);
+const printingTable = ref<any>(null);
 
 const form = ref({
   table_number: "",
@@ -90,6 +91,15 @@ async function deleteTable(id: number) {
 function getTableUrl(token: string) {
   return `${window.location.origin}/table/${token}`;
 }
+
+async function printOneTable(table: any) {
+  printingTable.value = table;
+  // Wait for DOM update so the print section renders with the correct data
+  setTimeout(() => {
+    window.print();
+    // Optional: reset after print dialog closes (though JS execution pauses in some browsers)
+  }, 100);
+}
 </script>
 
 <template>
@@ -102,10 +112,10 @@ function getTableUrl(token: string) {
           {{ t("nav.tables") || "Table Management" }}
         </h1>
         <p class="text-text-secondary dark:text-gray-400 font-medium">
-          Generate and manage secure QR codes for guest ordering.
+          Generate and manage secure QR codes for customer ordering.
         </p>
       </div>
-      <BaseButton variant="primary" size="lg" @click="openAddModal">
+      <BaseButton variant="primary" size="md" @click="openAddModal">
         <svg
           class="w-5 h-5 mr-2"
           fill="none"
@@ -146,23 +156,6 @@ function getTableUrl(token: string) {
       >
         <div class="flex justify-between items-start mb-6">
           <div class="flex gap-4 items-center">
-            <div
-              class="w-14 h-14 bg-gray-900 dark:bg-primary-600 rounded-3xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300"
-            >
-              <svg
-                class="w-7 h-7"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
-                />
-              </svg>
-            </div>
             <div>
               <span
                 class="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest block"
@@ -214,6 +207,27 @@ function getTableUrl(token: string) {
         </div>
 
         <div class="flex gap-3">
+          <BaseButton
+            variant="secondary"
+            size="sm"
+            class="!px-3"
+            @click="printOneTable(table)"
+            title="Print QR"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
+          </BaseButton>
           <BaseButton
             variant="secondary"
             size="sm"
@@ -349,6 +363,50 @@ function getTableUrl(token: string) {
         </form>
       </BaseCard>
     </div>
+
+    <!-- Printable Area (Hidden normally, shown on print) -->
+    <div v-if="printingTable" class="print-only hidden">
+      <div
+        class="flex flex-col items-center justify-center h-full w-full p-8 text-center border-4 border-black box-border"
+      >
+        <!-- Header / Logo -->
+        <div class="mb-8">
+          <img
+            v-if="authStore.shop?.logo_url"
+            :src="authStore.shop.logo_url"
+            class="h-24 mx-auto mb-4 object-contain"
+          />
+          <h1 class="text-4xl font-black uppercase tracking-wider mb-2">
+            {{ authStore.shop?.name || "Lucky Cafe" }}
+          </h1>
+          <p class="text-xl text-gray-600 font-medium">Scan to order</p>
+        </div>
+
+        <!-- Big QR -->
+        <div class="mb-8">
+          <QrcodeVue
+            :value="getTableUrl(printingTable.qr_token)"
+            :size="400"
+            level="H"
+            class="mx-auto"
+          />
+        </div>
+
+        <!-- Table Number -->
+        <div class="mt-4">
+          <p class="text-2xl font-bold uppercase tracking-[0.5em] text-gray-500">
+            TABLE
+          </p>
+          <h2 class="text-8xl font-black mt-2">
+            {{ printingTable.table_number }}
+          </h2>
+        </div>
+
+        <div class="mt-12 text-sm text-gray-400 font-mono">
+          Powered by CoffeePOS
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -358,26 +416,31 @@ function getTableUrl(token: string) {
 }
 
 @media print {
-  .btn-primary,
-  .fixed,
-  .p-8 > div:first-child,
-  .group button {
+  /* Hide everything by default */
+  body > * {
     display: none !important;
   }
 
-  .grid {
-    display: flex !important;
-    gap: 40px !important;
-    padding: 0 !important;
+  /* Show only the print container */
+  .print-only {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: white;
+    z-index: 9999;
   }
 
-  .group {
-    border: 1px solid #eee !important;
-    border-radius: 20px !important;
-    box-shadow: none !important;
-    page-break-inside: avoid;
-    margin-bottom: 2rem;
-    width: 300px !important;
+  /* Ensure the content inside print-only is visible */
+  .print-only * {
+    display: block;
+  }
+  
+  /* Flex is needed for the centering container */
+  .print-only .flex {
+      display: flex !important;
   }
 }
 </style>

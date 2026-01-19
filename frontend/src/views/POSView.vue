@@ -6,9 +6,11 @@ import PaymentModal from "@/components/PaymentModal.vue";
 import ReceiptModal from "@/components/ReceiptModal.vue";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal.vue";
 import { toast } from "vue-sonner";
+import { useI18n } from "vue-i18n";
 
 const posStore = usePosStore();
 const authStore = useAuthStore();
+const { t } = useI18n();
 
 const selectedCategory = ref<number | null>(null);
 const showPaymentModal = ref(false);
@@ -27,6 +29,11 @@ const receiptData = ref({
   orderNumber: "",
   shopName: "Lucky Cafe",
   currency: "USD" as "USD" | "KHR",
+  shopAddress: "",
+  shopPhone: "",
+  receiptFooter: "",
+  wifiSsid: "",
+  wifiPassword: "",
 });
 
 // ...
@@ -42,12 +49,17 @@ function handleKhqrSuccess(order: any) {
       change: 0,
       orderNumber: order.order_number,
       shopName: authStore.shop?.name || "Lucky Cafe",
+      shopAddress: authStore.shop?.address,
+      shopPhone: authStore.shop?.phone,
+      receiptFooter: authStore.shop?.receipt_footer,
+      wifiSsid: authStore.shop?.wifi_ssid,
+      wifiPassword: authStore.shop?.wifi_password,
       currency: "KHR", // KHQR is always KHR
     };
     showReceiptModal.value = true;
-    toast.success("KHQR Payment Confirmed!");
+    toast.success(t("common.success"));
   }
-}
+}    
 
 function handlePrint(order: any) {
   if (order) {
@@ -60,6 +72,11 @@ function handlePrint(order: any) {
         Number(order.total_amount),
       orderNumber: order.order_number,
       shopName: authStore.shop?.name || "Lucky Cafe",
+      shopAddress: authStore.shop?.address,
+      shopPhone: authStore.shop?.phone,
+      receiptFooter: authStore.shop?.receipt_footer,
+      wifiSsid: authStore.shop?.wifi_ssid,
+      wifiPassword: authStore.shop?.wifi_password,
       currency: order.payment_currency || "USD",
     };
     showReceiptModal.value = true;
@@ -125,6 +142,13 @@ async function handlePaymentConfirm(paymentData: {
     paymentData.receivedAmount
   );
 
+  const exchangeRate = Number(authStore.shop?.exchange_rate) || 4100;
+  let totalInPaymentCurrency = total;
+  if (paymentData.currency === "KHR") {
+    totalInPaymentCurrency = Math.ceil((total * exchangeRate) / 100) * 100;
+  }
+  const changeAmount = paymentData.receivedAmount - totalInPaymentCurrency;
+
   if (success) {
     const symbol = paymentData.currency === "USD" ? "$" : "៛";
     const formattedReceived =
@@ -132,22 +156,27 @@ async function handlePaymentConfirm(paymentData: {
         ? paymentData.receivedAmount.toFixed(2)
         : new Intl.NumberFormat("en-US").format(paymentData.receivedAmount);
 
-    toast.success("Payment Successful", {
-      description: `Cash received: ${symbol}${formattedReceived}`,
+    toast.success(t("common.success"), {
+      description: `${t("pos.cashReceived")}: ${symbol}${formattedReceived}`,
     });
 
     receiptData.value = {
       items,
       total,
       cashReceived: paymentData.receivedAmount,
-      change: 0,
+      change: changeAmount,
       currency: paymentData.currency,
       orderNumber: "ORD-" + Math.floor(Math.random() * 10000),
       shopName: authStore.shop?.name || "Lucky Cafe",
+      shopAddress: authStore.shop?.address,
+      shopPhone: authStore.shop?.phone,
+      receiptFooter: authStore.shop?.receipt_footer,
+      wifiSsid: authStore.shop?.wifi_ssid,
+      wifiPassword: authStore.shop?.wifi_password,
     };
     showReceiptModal.value = true;
   } else {
-    toast.error("Payment Failed", {
+    toast.error(t("common.error"), {
       description: "Please try again or use another method.",
     });
   }
@@ -161,7 +190,7 @@ function handleProductClick(product: any) {
   } else {
     // Direct add without customization
     posStore.addToOrder(product, null, []);
-    toast.success("Added to order", {
+    toast.success(t("common.add"), {
       description: product.name,
     });
   }
@@ -169,7 +198,7 @@ function handleProductClick(product: any) {
 
 function handleCustomizeAdd(data: any) {
   posStore.addToOrder(data.product, null, data.options);
-  toast.success("Added to order", {
+  toast.success(t("common.add"), {
     description: data.product.name,
   });
 }
@@ -191,7 +220,7 @@ const modalInitialMethod = computed(() => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search products (Ctrl+F)..."
+            :placeholder="$t('pos.searchPlaceholder')"
             class="w-full bg-app-bg border border-app-border rounded-xl py-3 pl-11 pr-4 text-sm text-app-text placeholder-app-muted focus:ring-2 focus:ring-primary-500 outline-none transition-all"
           />
           <svg
@@ -276,7 +305,9 @@ const modalInitialMethod = computed(() => {
         class="p-4 border-b border-app-border flex justify-between items-center"
       >
         <div>
-          <h2 class="font-bold text-lg text-app-text">Current Order</h2>
+          <h2 class="font-bold text-lg text-app-text">
+            {{ $t("pos.currentOrder") }}
+          </h2>
           <p class="text-sm text-app-muted">
             {{ authStore.user?.name || "Cashier" }}
           </p>
@@ -285,7 +316,7 @@ const modalInitialMethod = computed(() => {
           @click="posStore.clearOrder()"
           class="text-red-500 text-sm hover:bg-red-50 hover:dark:bg-red-900/20 px-2 py-1 rounded transition-colors"
         >
-          Clear
+          {{ $t("pos.clear") }}
         </button>
       </div>
 
@@ -307,7 +338,7 @@ const modalInitialMethod = computed(() => {
               d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
             ></path>
           </svg>
-          <p>No items added</p>
+          <p>{{ $t("pos.noItems") }}</p>
         </div>
 
         <div
@@ -371,11 +402,11 @@ const modalInitialMethod = computed(() => {
       <div class="p-4 bg-app-bg border-t border-app-border rounded-b-2xl">
         <div class="space-y-2 mb-4">
           <div class="flex justify-between text-app-muted">
-            <span>Subtotal</span>
+            <span>{{ $t("order.subtotal") }}</span>
             <span>${{ formatPrice(posStore.subtotal) }}</span>
           </div>
           <div class="flex justify-between text-xl font-bold text-app-text">
-            <span>Total</span>
+            <span>{{ $t("order.total") }}</span>
             <span>${{ formatPrice(posStore.total) }}</span>
           </div>
         </div>
@@ -386,14 +417,14 @@ const modalInitialMethod = computed(() => {
             @click="initiatePayment('khqr')"
             :disabled="posStore.currentOrderItems.length === 0"
           >
-            KHQR
+            {{ $t("order.khqr") }}
           </button>
           <button
             class="btn-primary py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             @click="initiatePayment('cash')"
             :disabled="posStore.currentOrderItems.length === 0"
           >
-            Cash
+            {{ $t("order.cash") }}
           </button>
         </div>
       </div>

@@ -174,7 +174,7 @@ async function deleteCategory(id: number) {
         <h1
           class="text-3xl font-bold text-text-primary dark:text-white flex items-center gap-2"
         >
-          📁 {{ t("nav.categories") || "Categories" }}
+          {{ t("nav.categories") || "Categories" }}
         </h1>
         <p class="text-text-secondary dark:text-gray-400 mt-1">
           Manage your menu groups and display order.

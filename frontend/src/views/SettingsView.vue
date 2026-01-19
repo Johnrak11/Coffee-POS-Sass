@@ -28,6 +28,8 @@ const form = ref({
   merchant_city: "",
   bakong_telegram_chat_id: "",
   theme_mode: "light",
+  wifi_ssid: "",
+  wifi_password: "",
 });
 
 onMounted(async () => {
@@ -91,10 +93,10 @@ async function saveSettings() {
     await fetchSettings();
     pendingLogoFile.value = null;
 
-    uiStore.showToast("success", "Settings saved successfully!");
+    uiStore.showToast("success", t("common.success"));
   } catch (e) {
     console.error(e);
-    uiStore.showToast("error", "Failed to update settings");
+    uiStore.showToast("error", t("common.error"));
   } finally {
     saving.value = false;
   }
@@ -103,11 +105,11 @@ async function saveSettings() {
 
 <template>
   <div
-    class="p-8 max-w-4xl mx-auto bg-bg-secondary dark:bg-gray-900 min-h-screen"
+    class="p-8 max-w-4xl bg-bg-secondary dark:bg-gray-900 min-h-screen"
   >
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-text-primary dark:text-white">
-        {{ t("nav.settings") || "Shop Settings" }}
+        {{ t("settings.shopSettings") }}
       </h1>
       <p class="text-text-secondary dark:text-gray-400">
         Configure your shop profile and receipt preferences.
@@ -130,7 +132,7 @@ async function saveSettings() {
             <span
               class="w-1.5 h-6 bg-primary-600 dark:bg-primary-500 rounded-full"
             ></span>
-            General Profile
+            {{ t("settings.generalProfile") }}
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Logo Col -->
@@ -140,7 +142,7 @@ async function saveSettings() {
               <label
                 class="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase mb-4 self-start"
               >
-                Shop Logo
+                {{ t("settings.shopLogo") }}
               </label>
               <ImageUpload
                 v-model="form.logo_url"
@@ -158,12 +160,12 @@ async function saveSettings() {
             <div class="space-y-6">
               <BaseInput
                 v-model="form.name"
-                label="Shop Name"
-                placeholder="Enter shop name"
+                :label="t('settings.shopName')"
+                :placeholder="t('settings.shopName')"
               />
               <BaseInput
                 v-model="form.phone"
-                label="Phone Number"
+                :label="t('settings.shopPhone')"
                 type="tel"
                 placeholder="+855 12 345 678"
               />
@@ -171,7 +173,7 @@ async function saveSettings() {
                 <label
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
                 >
-                  Address
+                  {{ t("settings.shopAddress") }}
                 </label>
                 <textarea
                   v-model="form.address"
@@ -183,13 +185,60 @@ async function saveSettings() {
             </div>
           </div>
 
+          
+          <!-- Receipt & WiFi Configuration -->
+          <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
+            <h3
+              class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"
+            >
+              <span
+                class="w-1.5 h-6 bg-emerald-500 rounded-full"
+              ></span>
+              {{ t("settings.receiptDetails") }}
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="md:col-span-2">
+                 <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+                >
+                 {{ t("settings.receiptFooter") }}
+                </label>
+                <textarea
+                  v-model="form.receipt_footer"
+                  rows="2"
+                  class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                  placeholder="Thank you for visiting! See you again soon."
+                ></textarea>
+                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  Printed at the bottom of every receipt.
+                </p>
+              </div>
+
+              <BaseInput
+                v-model="form.wifi_ssid"
+                :label="t('settings.wifiSsid')"
+                placeholder="Lucky-Guest"
+              />
+              <BaseInput
+                v-model="form.wifi_password"
+                :label="t('settings.wifiPassword')"
+                placeholder="12345678"
+              />
+              <div class="md:col-span-2">
+                 <p class="text-xs text-gray-400 dark:text-gray-500">
+                  WiFi details will be printed on the receipt for customers.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Exchange Rate -->
           <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
               >
-                Exchange Rate (1 USD = ? KHR)
+                {{ t("settings.exchangeRate") }}
               </label>
               <div class="relative">
                 <input
@@ -220,30 +269,30 @@ async function saveSettings() {
             <span
               class="w-1.5 h-6 bg-primary-600 dark:bg-primary-500 rounded-full"
             ></span>
-            Bakong Payment Configuration
+            {{ t("settings.bakongConfig") }}
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2">
               <BaseInput
                 v-model="form.bakong_account_id"
-                label="Bakong Account ID"
+                :label="t('settings.bakongId')"
                 placeholder="your_account@bakong"
               />
             </div>
             <BaseInput
               v-model="form.merchant_name"
-              label="Merchant Name"
+              :label="t('settings.merchantName')"
               placeholder="Lucky Café"
             />
             <BaseInput
               v-model="form.merchant_city"
-              label="Merchant City"
+              :label="t('settings.merchantCity')"
               placeholder="Phnom Penh"
             />
             <div class="md:col-span-2">
               <BaseInput
                 v-model="form.bakong_telegram_chat_id"
-                label="Telegram Chat ID (Optional)"
+                :label="t('settings.telegramChatId')"
                 placeholder="Enter Telegram Chat ID for notifications"
               />
             </div>
@@ -280,7 +329,7 @@ async function saveSettings() {
             :disabled="saving"
           >
             {{
-              saving ? "Saving Changes..." : t("common.save") || "Save Settings"
+              saving ? t("common.loading") : t("common.save")
             }}
           </BaseButton>
         </div>
