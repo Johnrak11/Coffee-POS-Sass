@@ -1,5 +1,6 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
+import { autoAnimatePlugin } from "@formkit/auto-animate/vue";
 import router from "./router";
 import i18n from "./i18n";
 import "./style.css";
@@ -7,7 +8,9 @@ import "./styles/design-tokens.css";
 import "nprogress/nprogress.css";
 import App from "./App.vue";
 
-import { autoAnimatePlugin } from "@formkit/auto-animate/vue";
+// Styles
+import "nprogress/nprogress.css";
+import "vue-sonner/style.css";
 // API client configured in @/api
 
 const app = createApp(App);

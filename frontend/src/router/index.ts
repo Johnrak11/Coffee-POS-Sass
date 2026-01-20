@@ -57,6 +57,11 @@ const routes: RouteRecordRaw[] = [
         name: "pos-orders",
         component: () => import("../views/OrderHistoryView.vue"),
       },
+      {
+        path: "notifications",
+        name: "pos-notifications",
+        component: () => import("../views/NotificationView.vue"),
+      },
     ],
   },
   {

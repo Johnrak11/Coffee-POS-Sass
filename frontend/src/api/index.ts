@@ -4,7 +4,8 @@ import axios, {
 } from "axios";
 import NProgress from "nprogress";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8001/api";
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8001/api";
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -19,8 +20,10 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Start loading bar
-    NProgress.start();
+    // Start loading bar unless skipped
+    if (!(config as any).skipLoading) {
+      NProgress.start();
+    }
 
     // Add auth token if exists
     const token = localStorage.getItem("staff_token");

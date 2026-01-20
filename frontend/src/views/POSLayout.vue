@@ -1,23 +1,52 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
 import { useRouter, useRoute } from "vue-router";
 import { useUIStore } from "@/stores/ui";
+import { useNotificationStore } from "@/stores/notification";
+import { toast } from "vue-sonner";
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const uiStore = useUIStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
 const route = useRoute();
 
+let pollingInterval: any = null;
+
+onMounted(() => {
+  if (authStore.user) {
+    // Poll unread count every 15 seconds
+    notificationStore.checkUnreadCount();
+    pollingInterval = setInterval(() => {
+      notificationStore.checkUnreadCount();
+    }, 15000);
+  }
+});
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval);
+});
+
+function handleNotificationClick(notification: any) {
+  notificationStore.markAsRead(notification.id);
+  // Navigate to order details
+  if (notification.data?.id) {
+    // Find if it's new order or other type. Assuming new order.
+    router.push(`/pos/orders`); // Ideally to specific order /pos/orders/${id} but list is fine
+  }
+}
+
 function toggleLanguage() {
-  const newLocale = uiStore.currentLocale === "en" ? "kh" : "en";
+  const newLocale = uiStore.currentLocale === "en" ? "km" : "en";
   uiStore.setLocale(newLocale);
 }
 
 function logout() {
-  authStore.logoutUser();
-  router.push("/login"); // Back to staff selection
+  authStore.logout();
+  router.push("/login");
 }
 </script>
 
@@ -139,7 +168,6 @@ function logout() {
             class="font-medium whitespace-nowrap"
             >{{ $t("pos.pointOfSale") }}</span
           >
-          <!-- Tooltip -->
           <div
             v-if="themeStore.isSidebarCollapsed"
             class="absolute left-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
@@ -217,6 +245,58 @@ function logout() {
             class="absolute left-full ml-3 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
           >
             {{ $t("nav.orders") }}
+          </div>
+        </router-link>
+
+        <!-- Notification Bell (Direct Link) -->
+        <router-link
+          to="/pos/notifications"
+          class="flex items-center gap-3 p-3 rounded-xl transition-colors group relative"
+          :class="[
+            route.path === '/pos/notifications'
+              ? 'bg-primary-600/20 text-primary-600 dark:text-primary-400'
+              : 'text-app-muted hover:bg-app-bg hover:text-app-text',
+            themeStore.isSidebarCollapsed ? 'justify-center' : '',
+          ]"
+        >
+          <div class="relative">
+            <svg
+              class="w-6 h-6 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
+            </svg>
+            <span
+              v-if="notificationStore.unreadCount > 0"
+              class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold ring-2 ring-white dark:ring-gray-900"
+            >
+              {{
+                notificationStore.unreadCount > 9
+                  ? "9+"
+                  : notificationStore.unreadCount
+              }}
+            </span>
+          </div>
+
+          <span
+            v-if="!themeStore.isSidebarCollapsed"
+            class="font-medium whitespace-nowrap"
+          >
+            Notifications
+          </span>
+
+          <div
+            v-if="themeStore.isSidebarCollapsed"
+            class="absolute left-full ml-3 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50"
+          >
+            Notifications
           </div>
         </router-link>
 

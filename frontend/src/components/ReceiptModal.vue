@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import html2canvas from "html2canvas";
 
 const props = defineProps<{
   show: boolean;
@@ -10,6 +11,7 @@ const props = defineProps<{
     cashReceived: number;
     change: number;
     orderNumber: string;
+    queueNumber?: number;
     shopName?: string;
     date?: string;
     currency?: "USD" | "KHR";
@@ -45,6 +47,27 @@ function handlePrint() {
   emit("print");
 }
 
+async function handleDownloadImage() {
+  const element = document.querySelector(".receipt-content") as HTMLElement;
+  if (!element) return;
+
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2, // Retain high quality
+      backgroundColor: "#ffffff",
+      logging: false,
+      useCORS: true, // if images are used
+    });
+
+    const link = document.createElement("a");
+    link.download = `Receipt-${props.receiptData.orderNumber || "Order"}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  } catch (e) {
+    console.error("Failed to generate receipt image", e);
+  }
+}
+
 function calculateItemTotal(item: any) {
   let price = Number(item.product.price);
   if (item.variant) price += Number(item.variant.extra_price || 0);
@@ -77,13 +100,32 @@ function calculateItemTotal(item: any) {
         <div
           class="bg-app-bg p-4 flex justify-between items-center print:hidden border-b border-app-border"
         >
-          <h3 class="font-bold text-app-text">{{ $t("receipt.preview") }}</h3>
+          <button
+            @click="$emit('close')"
+            class="px-4 py-2 text-app-muted hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            {{ $t("receipt.close") }}
+          </button>
+
           <div class="flex gap-2">
             <button
-              @click="$emit('close')"
-              class="px-4 py-2 text-app-muted hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+              @click="handleDownloadImage"
+              class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-bold flex items-center gap-2"
             >
-              {{ $t("receipt.close") }}
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Save Image
             </button>
             <button
               @click="handlePrint"
@@ -120,7 +162,7 @@ function calculateItemTotal(item: any) {
                 {{ receiptData.shopAddress }}
               </p>
               <p v-else>Phnom Penh, Cambodia</p>
-              
+
               <p v-if="receiptData.shopPhone">
                 Tel: {{ receiptData.shopPhone }}
               </p>
@@ -129,6 +171,16 @@ function calculateItemTotal(item: any) {
           </div>
 
           <div class="border-b border-dashed border-gray-300 pb-4 mb-4">
+            <!-- Queue Number Display -->
+            <div class="text-center mb-4 pb-4 border-b border-gray-200">
+              <div class="text-xs uppercase font-bold text-gray-500 mb-1">
+                {{ $t("receipt.queueNumber") || "Queue Number" }}
+              </div>
+              <div class="text-4xl font-black">
+                {{ receiptData.queueNumber || "-" }}
+              </div>
+            </div>
+
             <div class="flex justify-between">
               <span>{{ $t("receipt.orderNumber") }}</span>
               <span class="font-bold">{{
@@ -170,7 +222,9 @@ function calculateItemTotal(item: any) {
                       </div>
                     </div>
                   </td>
-                  <td class="py-2 text-center align-top">{{ item.quantity }}</td>
+                  <td class="py-2 text-center align-top">
+                    {{ item.quantity }}
+                  </td>
                   <td class="py-2 text-right align-top">
                     {{ calculateItemTotal(item) }}
                   </td>
@@ -186,7 +240,9 @@ function calculateItemTotal(item: any) {
                 >{{ currencySymbol
                 }}{{
                   receiptData.currency === "KHR"
-                    ? formatAmount(receiptData.cashReceived - receiptData.change)
+                    ? formatAmount(
+                        receiptData.cashReceived - receiptData.change,
+                      )
                     : formatAmount(receiptData.total)
                 }}</span
               >
@@ -207,7 +263,8 @@ function calculateItemTotal(item: any) {
             >
               <span>{{ $t("receipt.change") }}</span>
               <span
-                >{{ currencySymbol }}{{ formatAmount(receiptData.change) }}</span
+                >{{ currencySymbol
+                }}{{ formatAmount(receiptData.change) }}</span
               >
             </div>
           </div>

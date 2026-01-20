@@ -10,10 +10,13 @@
   },
   "dependencies": {
     "@formkit/auto-animate": "^0.9.0",
+    "@headlessui/vue": "^1.7.23",
     "@types/lodash": "^4.17.23",
     "@types/nprogress": "^0.2.3",
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",
+    "event-source-polyfill": "^1.0.31",
+    "html2canvas": "^1.4.1",
     "lodash": "^4.17.21",
     "nprogress": "^0.2.0",
     "pinia": "^3.0.4",

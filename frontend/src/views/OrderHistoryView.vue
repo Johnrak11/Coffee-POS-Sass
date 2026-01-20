@@ -27,6 +27,10 @@ const showDetailsModal = ref(false);
 const showInvoiceModal = ref(false);
 const selectedOrder = ref<any>(null);
 
+import { useUIStore } from "@/stores/ui";
+
+const uiStore = useUIStore();
+
 onMounted(() => {
   fetchOrders();
 });
@@ -38,6 +42,15 @@ watch(
     fetchOrders();
   },
   { deep: true },
+);
+
+// Auto-refresh when new order arrives
+watch(
+  () => uiStore.orderRefreshSignal,
+  () => {
+    // Keep current page, just refresh data
+    fetchOrders(pagination.value.current_page);
+  },
 );
 
 async function fetchOrders(page = 1) {
@@ -198,6 +211,7 @@ function formatAmount(order: any) {
             class="bg-app-bg text-app-muted text-xs uppercase font-bold sticky top-0 border-b border-app-border"
           >
             <tr>
+              <th class="px-6 py-4">Queue #</th>
               <th class="px-6 py-4">Order #</th>
               <th class="px-6 py-4">Date</th>
               <th class="px-6 py-4">Processed By</th>
@@ -223,6 +237,9 @@ function formatAmount(order: any) {
               :key="order.id"
               class="hover:bg-app-bg transition-colors"
             >
+              <td class="px-6 py-4 font-black text-lg text-primary-500">
+                #{{ order.queue_number || "-" }}
+              </td>
               <td class="px-6 py-4 font-mono text-sm text-app-text">
                 {{ order.order_number }}
               </td>

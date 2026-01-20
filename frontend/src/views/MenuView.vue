@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { guestApi } from "@/api";
 import { useCartStore } from "@/stores/cart";
 import { useSessionStore } from "@/stores/session";
@@ -24,13 +25,13 @@ interface Category {
 import { toast } from "vue-sonner";
 
 const route = useRoute();
+const { t } = useI18n();
 const cartStore = useCartStore();
 const sessionStore = useSessionStore();
 
 const categories = ref<Category[]>([]);
 const selectedCategory = ref<number | null>(null);
 const loading = ref(true);
-const showCart = ref(false);
 const searchQuery = ref("");
 const showCustomizeModal = ref(false);
 const selectedProduct = ref<Product | null>(null);
@@ -64,6 +65,10 @@ onMounted(async () => {
     if (response.data.shop) {
       sessionStore.shopName = response.data.shop.name;
       sessionStore.shopSlug = response.data.shop.slug;
+      if (response.data.shop.logo_url) {
+        sessionStore.shopLogo = response.data.shop.logo_url;
+        localStorage.setItem("shop_logo", response.data.shop.logo_url);
+      }
       localStorage.setItem("shop_name", response.data.shop.name);
       localStorage.setItem("shop_slug", response.data.shop.slug);
     }
@@ -124,19 +129,29 @@ async function addToCart(product: Product) {
     <!-- Header -->
     <header class="glass-card sticky top-0 z-40 px-4 py-4">
       <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-xl font-display font-bold text-gray-900">
-            {{ sessionStore.shopName }}
-          </h1>
-          <p class="text-sm text-gray-600">
-            Table {{ sessionStore.tableNumber }}
-          </p>
+        <div class="flex items-center gap-3">
+          <img
+            v-if="sessionStore.shopLogo"
+            :src="sessionStore.shopLogo"
+            alt="Logo"
+            class="w-10 h-10 rounded-full object-cover shadow-sm bg-white"
+          />
+          <div>
+            <h1
+              class="text-xl font-display font-bold text-gray-900 leading-tight"
+            >
+              {{ sessionStore.shopName }}
+            </h1>
+            <p class="text-xs text-gray-500 font-medium">
+              Table {{ sessionStore.tableNumber }}
+            </p>
+          </div>
         </div>
 
         <!-- Cart Icon -->
         <button
-          @click="showCart = true"
-          class="relative bg-accent-500 text-white w-12 h-12 rounded-full shadow-medium hover:scale-110 active:scale-95 transition-all"
+          @click="$router.push('/checkout')"
+          class="relative bg-white text-gray-700 w-10 h-10 rounded-full shadow-sm border border-gray-100 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
         >
           <svg
             class="w-6 h-6 mx-auto"
@@ -258,9 +273,10 @@ async function addToCart(product: Product) {
     <router-link
       v-if="!cartStore.isEmpty"
       to="/checkout"
-      class="fixed bottom-6 left-4 right-4 btn-accent text-center py-4 shadow-large"
+      class="fixed bottom-6 left-4 right-4 bg-primary-600 text-white text-center py-4 rounded-2xl shadow-xl shadow-primary-600/30 font-bold text-lg flex justify-between px-6 items-center active:scale-[0.98] transition-transform z-50"
     >
-      View Cart · ${{ Number(cartStore.total).toFixed(2) }}
+      <span>{{ t("customer.viewCart") }}</span>
+      <span>${{ Number(cartStore.total).toFixed(2) }}</span>
     </router-link>
 
     <!-- Product Customize Modal -->

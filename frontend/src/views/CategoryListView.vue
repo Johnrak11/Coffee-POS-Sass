@@ -49,7 +49,7 @@ async function fetchCategories(p: number = 1) {
 
     const response = await apiClient.get(
       `/staff/admin/${shopSlug}/menu/categories`,
-      { params }
+      { params },
     );
     categories.value = response.data;
   } catch (e) {
@@ -97,13 +97,13 @@ async function uploadToCloudinary(file: File) {
   formData.append("file", file);
   formData.append(
     "upload_preset",
-    import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "coffee-pos-unsigned"
+    import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "coffee-pos-unsigned",
   );
   formData.append("folder", "coffee-pos/categories");
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    { method: "POST", body: formData }
+    { method: "POST", body: formData },
   );
 
   if (!response.ok) throw new Error("Image upload failed");
@@ -123,17 +123,17 @@ async function handleSubmit() {
     if (editingCategory.value) {
       await apiClient.put(
         `/staff/admin/${shopSlug}/menu/categories/${editingCategory.value.id}`,
-        form.value
+        form.value,
       );
     } else {
       await apiClient.post(
         `/staff/admin/${shopSlug}/menu/categories`,
-        form.value
+        form.value,
       );
     }
     uiStore.showToast(
       "success",
-      editingCategory.value ? t("common.success") : "Category added"
+      editingCategory.value ? t("common.success") : "Category added",
     );
     await fetchCategories();
     showModal.value = false;
@@ -147,7 +147,7 @@ async function handleSubmit() {
 async function deleteCategory(id: number) {
   if (
     !confirm(
-      "Are you sure? All products in this category will be uncategorized."
+      "Are you sure? All products in this category will be uncategorized.",
     )
   )
     return;
@@ -263,7 +263,9 @@ async function deleteCategory(id: number) {
               v-if="cat.icon && cat.icon !== 'Coffee'"
               :src="cat.icon"
               class="w-full h-full object-cover"
-              @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
+              @error="
+                (e) => ((e.target as HTMLImageElement).style.display = 'none')
+              "
             />
             <span v-if="!cat.icon || cat.icon === 'Coffee'">☕</span>
           </div>

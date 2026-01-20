@@ -19,7 +19,7 @@ const { t } = useI18n();
 
 const currency = ref<"USD" | "KHR">("USD");
 const paymentMethod = ref<"DASHBOARD" | "KHQR">(
-  props.initialMethod || "DASHBOARD"
+  props.initialMethod || "DASHBOARD",
 );
 const receivedAmount = ref("");
 
@@ -29,7 +29,7 @@ const qrString = ref("");
 const qrMd5 = ref("");
 const qrImage = ref("");
 const paymentStatus = ref<"pending" | "success" | "failed" | "expired">(
-  "pending"
+  "pending",
 );
 const snapshotAmount = ref(0);
 const snapshotCurrency = ref<"USD" | "KHR">("USD");
@@ -90,7 +90,7 @@ watch(
       stopPolling();
       stopTimer();
     }
-  }
+  },
 );
 
 function toggleCurrency(curr: "USD" | "KHR") {
@@ -189,9 +189,13 @@ async function handleKhqrPayment() {
 
     if (targetOrder) {
       // REGENERATE Flow (Reuse existing/pending order)
-      const response = await apiClient.post("/khqr/regenerate", {
-        order_id: targetOrder.id,
-      });
+      const response = await apiClient.post(
+        "/khqr/regenerate",
+        {
+          order_id: targetOrder.id,
+        },
+        { skipLoading: true } as any,
+      );
       result = {
         success: true,
         order: {
@@ -205,7 +209,7 @@ async function handleKhqrPayment() {
         authStore.shop.id,
         "khqr",
         currency.value,
-        totalInCurrency.value
+        totalInCurrency.value,
       );
     }
 
@@ -217,7 +221,7 @@ async function handleKhqrPayment() {
       qrString.value = qrData.qr_string;
       qrMd5.value = qrData.md5;
       qrImage.value = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-        qrData.qr_string
+        qrData.qr_string,
       )}`;
 
       startPolling();
@@ -283,9 +287,13 @@ function startPolling() {
 
     try {
       // Single Check Status
-      const response = await apiClient.post("/khqr/check-status-single", {
-        md5: qrMd5.value,
-      });
+      const response = await apiClient.post(
+        "/khqr/check-status-single",
+        {
+          md5: qrMd5.value,
+        },
+        { skipLoading: true } as any,
+      );
 
       const results = response.data.data || [];
       const myTx = results.length > 0 ? results[0] : null;
@@ -360,7 +368,6 @@ function cancelKhqr() {
   // We want to keep the pending order so we can update it if they switch to Cash.
   // if (!props.existingOrder) currentOrder.value = null; // REMOVED
 }
-
 
 function handleKeydown(e: KeyboardEvent) {
   if (!props.show) return;
@@ -563,8 +570,8 @@ onUnmounted(() => {
                     paymentMethod === "KHQR"
                       ? formatCurrency(totalInCurrency)
                       : receivedAmount
-                      ? formatCurrency(Number(receivedAmount))
-                      : "0"
+                        ? formatCurrency(Number(receivedAmount))
+                        : "0"
                   }}
                 </div>
                 <button
@@ -576,8 +583,6 @@ onUnmounted(() => {
                 </button>
               </div>
             </div>
-
-
 
             <!-- Numpad (Only for Cash) -->
             <div
@@ -641,8 +646,8 @@ onUnmounted(() => {
                 paymentMethod === 'KHQR'
                   ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-500 hover:to-rose-500 shadow-red-500/30'
                   : isValid
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-500/30'
-                  : 'bg-app-bg text-app-muted cursor-not-allowed border border-app-border',
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-500/30'
+                    : 'bg-app-bg text-app-muted cursor-not-allowed border border-app-border',
               ]"
             >
               {{

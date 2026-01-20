@@ -38,9 +38,8 @@ class StaffAuthService
         }
 
         // Generate Token
-        // Ideally use: $token = $user->createToken('staff-token')->plainTextToken;
-        // For now maintaining the mock token but wrapped in service
-        $token = base64_encode($user->id . ':' . Str::random(32));
+        // Use real Sanctum token for auth:sanctum middleware
+        $token = $user->createToken('staff-token')->plainTextToken;
 
         return [
             'user' => $user,

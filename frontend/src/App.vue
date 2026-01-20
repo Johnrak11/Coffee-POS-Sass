@@ -3,7 +3,6 @@ import { Toaster } from "vue-sonner";
 import { onMounted } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useUIStore } from "@/stores/ui";
-import ToastContainer from "@/components/common/ToastContainer.vue";
 
 const authStore = useAuthStore();
 const uiStore = useUIStore();
@@ -25,14 +24,15 @@ onMounted(() => {
       </transition>
     </router-view>
     <Toaster position="top-center" richColors closeButton />
-    <ToastContainer />
   </div>
 </template>
 
 <style>
 .page-enter-active,
 .page-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .page-enter-from {

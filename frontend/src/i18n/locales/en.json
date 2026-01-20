@@ -29,7 +29,8 @@
     "allStatus": "All Status",
     "paymentSuccessful": "Payment Successful!",
     "transactionCompleted": "Transaction Completed Successfully",
-    "exact": "Exact"
+    "exact": "Exact",
+    "added": "added"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -140,7 +141,8 @@
     "poweredBy": "Powered by Coffee-POS SaaS",
     "thankYou": "Thank you for visiting",
     "freeWifi": "Free WiFi",
-    "password": "Pwd"
+    "password": "Pwd",
+    "queueNumber": "Queue Number"
   },
   "pos": {
     "pointOfSale": "Point of Sale",

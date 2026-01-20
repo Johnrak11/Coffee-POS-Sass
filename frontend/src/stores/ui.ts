@@ -8,12 +8,12 @@ export const useUIStore = defineStore("ui", () => {
   // Theme management
   const isDarkMode = ref<boolean>(
     localStorage.getItem("darkMode") === "true" ||
-      window.matchMedia("(prefers-color-scheme: dark)").matches
+      window.matchMedia("(prefers-color-scheme: dark)").matches,
   );
 
   // Language management (synced with i18n)
   const currentLocale = ref<"en" | "kh">(
-    (localStorage.getItem("locale") as "en" | "kh") || "en"
+    (localStorage.getItem("locale") as "en" | "kh") || "en",
   );
 
   // Sidebar state (for mobile responsiveness)
@@ -66,7 +66,7 @@ export const useUIStore = defineStore("ui", () => {
   function showToast(
     type: "success" | "error" | "warning" | "info",
     message: string,
-    duration = 3000
+    duration = 3000,
   ) {
     const id = ++toastId;
     toasts.value.push({ id, type, message, duration });
@@ -92,6 +92,13 @@ export const useUIStore = defineStore("ui", () => {
   watch(isDarkMode, () => {
     updateThemeClass();
   });
+
+  // Order Refresh Signal
+  const orderRefreshSignal = ref(0);
+
+  function triggerOrderRefresh() {
+    orderRefreshSignal.value++;
+  }
 
   // Handle window resize for mobile detection
   function handleResize() {
@@ -120,5 +127,7 @@ export const useUIStore = defineStore("ui", () => {
     toggleSidebar,
     showToast,
     removeToast,
+    orderRefreshSignal,
+    triggerOrderRefresh,
   };
 });

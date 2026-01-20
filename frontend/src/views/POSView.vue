@@ -48,6 +48,7 @@ function handleKhqrSuccess(order: any) {
       cashReceived: Number(order.total_amount), // KHQR is exact
       change: 0,
       orderNumber: order.order_number,
+      queueNumber: order.queue_number, // Added queue number
       shopName: authStore.shop?.name || "Lucky Cafe",
       shopAddress: authStore.shop?.address,
       shopPhone: authStore.shop?.phone,
@@ -59,7 +60,7 @@ function handleKhqrSuccess(order: any) {
     showReceiptModal.value = true;
     toast.success(t("common.success"));
   }
-}    
+}
 
 function handlePrint(order: any) {
   if (order) {
@@ -71,6 +72,7 @@ function handlePrint(order: any) {
         Number(order.received_amount || order.total_amount) -
         Number(order.total_amount),
       orderNumber: order.order_number,
+      queueNumber: order.queue_number, // Added queue number
       shopName: authStore.shop?.name || "Lucky Cafe",
       shopAddress: authStore.shop?.address,
       shopPhone: authStore.shop?.phone,
@@ -91,7 +93,7 @@ const displayedProducts = computed(() => {
     products = posStore.categories.flatMap((c: any) => c.products);
   } else {
     const category = posStore.categories.find(
-      (c) => c.id === selectedCategory.value
+      (c) => c.id === selectedCategory.value,
     );
     products = category ? category.products : [];
   }
@@ -139,7 +141,7 @@ async function handlePaymentConfirm(paymentData: {
     1,
     "cash",
     paymentData.currency,
-    paymentData.receivedAmount
+    paymentData.receivedAmount,
   );
 
   const exchangeRate = Number(authStore.shop?.exchange_rate) || 4100;
@@ -149,7 +151,7 @@ async function handlePaymentConfirm(paymentData: {
   }
   const changeAmount = paymentData.receivedAmount - totalInPaymentCurrency;
 
-  if (success) {
+  if (success && success.order) {
     const symbol = paymentData.currency === "USD" ? "$" : "៛";
     const formattedReceived =
       paymentData.currency === "USD"
@@ -160,13 +162,15 @@ async function handlePaymentConfirm(paymentData: {
       description: `${t("pos.cashReceived")}: ${symbol}${formattedReceived}`,
     });
 
+    // Use actual order data from backend response
     receiptData.value = {
       items,
       total,
       cashReceived: paymentData.receivedAmount,
       change: changeAmount,
       currency: paymentData.currency,
-      orderNumber: "ORD-" + Math.floor(Math.random() * 10000),
+      orderNumber: success.order.order_number, // Real order number
+      queueNumber: success.order.queue_number, // Real queue number
       shopName: authStore.shop?.name || "Lucky Cafe",
       shopAddress: authStore.shop?.address,
       shopPhone: authStore.shop?.phone,
@@ -190,17 +194,13 @@ function handleProductClick(product: any) {
   } else {
     // Direct add without customization
     posStore.addToOrder(product, null, []);
-    toast.success(t("common.add"), {
-      description: product.name,
-    });
+    toast.success(`${product.name} ${t("common.added") || "added"}`);
   }
 }
 
 function handleCustomizeAdd(data: any) {
   posStore.addToOrder(data.product, null, data.options);
-  toast.success(t("common.add"), {
-    description: data.product.name,
-  });
+  toast.success(`${data.product.name} ${t("common.added") || "added"}`);
 }
 
 const modalInitialMethod = computed(() => {

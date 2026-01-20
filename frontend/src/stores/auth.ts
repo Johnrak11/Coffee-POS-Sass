@@ -44,7 +44,7 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  function logoutUser() {
+  function logout() {
     user.value = null;
     token.value = null;
     localStorage.removeItem("staff_token");
@@ -54,7 +54,7 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   function logoutShop() {
-    logoutUser();
+    logout();
     shop.value = null;
     localStorage.removeItem("last_shop_slug");
     localStorage.removeItem("staff_shop");
@@ -81,7 +81,7 @@ export const useAuthStore = defineStore("auth", () => {
     isOwner,
     getStaffList,
     login,
-    logoutUser,
+    logout,
     logoutShop,
     restoreSession,
   };

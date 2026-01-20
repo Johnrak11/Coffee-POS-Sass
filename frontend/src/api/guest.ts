@@ -48,7 +48,7 @@ export const guestApi = {
    * Get cart contents
    */
   async getCart(
-    sessionToken: string
+    sessionToken: string,
   ): Promise<AxiosResponse<{ cart: CartItem[] }>> {
     return apiClient.get(`/guest/cart/${sessionToken}`);
   },
@@ -58,7 +58,7 @@ export const guestApi = {
    */
   async updateCartItem(
     cartItemId: number,
-    quantity: number
+    quantity: number,
   ): Promise<AxiosResponse<any>> {
     return apiClient.patch(`/guest/cart/${cartItemId}`, { quantity });
   },
@@ -84,7 +84,41 @@ export const guestApi = {
    * Get order status (for payment polling)
    */
   async getOrderStatus(orderId: number): Promise<AxiosResponse<any>> {
-    return apiClient.get(`/guest/order/${orderId}/status`);
+    return apiClient.get(`/guest/order/${orderId}/status`, {
+      skipLoading: true,
+    } as any);
+  },
+
+  /**
+   * Check status of SINGLE transaction (md5)
+   */
+  async checkStatusSingle(md5: string): Promise<AxiosResponse<any>> {
+    return apiClient.post("/khqr/check-status-single", { md5 }, {
+      skipLoading: true,
+    } as any);
+  },
+
+  /**
+   * Generate KHQR for Guest (Amount + Currency only, no Order ID yet)
+   */
+  async generateKhqr(
+    amount: number,
+    currency: "USD" | "KHR",
+  ): Promise<AxiosResponse<any>> {
+    return apiClient.post("/khqr/generate", { amount, currency });
+  },
+
+  /**
+   * Finalize Order after KHQR Success
+   */
+  async finalizeKhqrOrder(
+    sessionToken: string,
+    md5: string,
+  ): Promise<AxiosResponse<any>> {
+    return apiClient.post("/guest/checkout/finalize-khqr", {
+      session_token: sessionToken,
+      khqr_md5: md5,
+    });
   },
 };
 

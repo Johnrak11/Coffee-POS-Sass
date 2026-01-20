@@ -69,23 +69,28 @@ class PosOrderController extends Controller
                 $qrResult = (array) $qrResult;
 
                 if ($qrResult) {
-                    $order->khqr_md5 = $qrResult['md5'] ?? null;
-                    $order->khqr_string = $qrResult['qr_string'] ?? null;
-                    $order->save();
+                    // Support both flat structure and nested 'data' structure
+                    $data = isset($qrResult['data']) ? (array) $qrResult['data'] : $qrResult;
 
-                    // Attach QR result to response so frontend can display it
-                    $order->qr_data = $qrResult;
+                    if (isset($data['qr_string']) && isset($data['md5'])) {
+                        $order->khqr_md5 = $data['md5'];
+                        $order->khqr_string = $data['qr_string'];
+                        $order->save();
 
-                    // Create Transaction Record (KHQR)
-                    \App\Models\Transaction::create([
-                        'order_id' => $order->id,
-                        'payment_method' => 'khqr',
-                        'amount' => $order->total_amount,
-                        'currency' => $order->payment_currency ?? 'USD',
-                        'khqr_string' => $qrResult['qr_string'] ?? 'N/A',
-                        'md5_hash' => $qrResult['md5'] ?? 'N/A',
-                        'payload' => $qrResult
-                    ]);
+                        // Attach QR result to response so frontend can display it
+                        $order->qr_data = $qrResult;
+
+                        // Create Transaction Record (KHQR)
+                        \App\Models\Transaction::create([
+                            'order_id' => $order->id,
+                            'payment_method' => 'khqr',
+                            'amount' => $order->total_amount,
+                            'currency' => $order->payment_currency ?? 'USD',
+                            'khqr_string' => $data['qr_string'],
+                            'md5_hash' => $data['md5'],
+                            'payload' => $qrResult
+                        ]);
+                    }
                 }
             } else {
                 // Create Transaction Record (Cash)
@@ -99,6 +104,10 @@ class PosOrderController extends Controller
                     'payload' => ['message' => 'Cash Payment Manual']
                 ]);
             }
+
+            // Send Database Notification to all staff in this shop
+            $shopUsers = \App\Models\User::where('shop_id', $validated['shop_id'])->get();
+            \Illuminate\Support\Facades\Notification::send($shopUsers, new \App\Notifications\NewOrderNotification($order));
 
             return response()->json([
                 'success' => true,

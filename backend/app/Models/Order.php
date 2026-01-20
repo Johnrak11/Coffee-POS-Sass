@@ -11,6 +11,7 @@ class Order extends Model
         'user_id',
         'table_session_id',
         'order_number',
+        'queue_number',
         'total_amount',
         'payment_method',
         'payment_status',
@@ -27,6 +28,20 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'payment_metadata' => 'array',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($order) {
+            if (!$order->queue_number) {
+                // Get max queue number for this shop today
+                $maxQueue = Order::where('shop_id', $order->shop_id)
+                    ->whereDate('created_at', now()->toDateString())
+                    ->max('queue_number');
+
+                $order->queue_number = ($maxQueue ?? 0) + 1;
+            }
+        });
+    }
 
     // Relationships
     public function shop()

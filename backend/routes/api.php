@@ -29,6 +29,7 @@ Route::prefix('guest')->group(function () {
 
     // Checkout
     Route::post('checkout', [OrderController::class, 'checkout']);
+    Route::post('checkout/finalize-khqr', [OrderController::class, 'finalizeKhqr']);
 
     // Order Status (for payment polling)
     Route::get('order/{orderId}/status', [OrderController::class, 'getOrderStatus']);
@@ -60,53 +61,63 @@ Route::prefix('super-admin')->middleware(['auth:sanctum', \App\Http\Middleware\C
 
 
 // Staff API
+// Staff API
 Route::prefix('staff')->middleware([\App\Http\Middleware\CheckSubscription::class])->group(function () {
-    // ... existing routes
+    // Public Staff Routes (Login/Setup)
     Route::get('users/{shopSlug}', [\App\Http\Controllers\Api\StaffController::class, 'getStaffList']);
     Route::post('auth', [\App\Http\Controllers\Api\StaffController::class, 'authenticate']);
-    Route::post('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'store']);
-    Route::get('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'index']); // Order History
-    Route::get('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'show']); // Order Details
-    Route::put('orders/{order}/payment-status', [\App\Http\Controllers\Api\PosOrderController::class, 'updatePaymentStatus']); // Update Status
 
-    // Kitchen API
-    Route::get('kitchen/{shopSlug}/orders', [\App\Http\Controllers\Api\KitchenController::class, 'index']);
-    Route::post('kitchen/orders/{orderId}/status', [\App\Http\Controllers\Api\KitchenController::class, 'updateStatus']);
+    // Protected Staff Routes (Requires Login)
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::post('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'store']);
+        Route::prefix('notifications')->group(function () {
+            Route::get('unread-count', [\App\Http\Controllers\Api\StaffNotificationController::class, 'getUnreadCount']);
+            Route::get('/', [\App\Http\Controllers\Api\StaffNotificationController::class, 'index']);
+            Route::post('{id}/read', [\App\Http\Controllers\Api\StaffNotificationController::class, 'markAsRead']);
+        });
+        Route::get('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'index']); // Order History
+        Route::get('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'show']); // Order Details
+        Route::put('orders/{order}/payment-status', [\App\Http\Controllers\Api\PosOrderController::class, 'updatePaymentStatus']); // Update Status
 
-    // Admin API
-    Route::get('admin/{shopSlug}/stats', [\App\Http\Controllers\Api\AdminController::class, 'stats']);
-    Route::get('admin/{shopSlug}/transactions', [\App\Http\Controllers\Api\AdminController::class, 'transactions']);
+        // Kitchen API
+        Route::get('kitchen/{shopSlug}/orders', [\App\Http\Controllers\Api\KitchenController::class, 'index']);
+        Route::post('kitchen/orders/{orderId}/status', [\App\Http\Controllers\Api\KitchenController::class, 'updateStatus']);
 
-    // Menu Management
-    Route::prefix('admin/{shopSlug}/menu')->group(function () {
-        Route::get('categories', [\App\Http\Controllers\Api\CategoryManagementController::class, 'index']);
-        Route::post('categories', [\App\Http\Controllers\Api\CategoryManagementController::class, 'store']);
-        Route::put('categories/{categoryId}', [\App\Http\Controllers\Api\CategoryManagementController::class, 'update']);
-        Route::delete('categories/{categoryId}', [\App\Http\Controllers\Api\CategoryManagementController::class, 'destroy']);
+        // Admin API
+        Route::get('admin/{shopSlug}/stats', [\App\Http\Controllers\Api\AdminController::class, 'stats']);
+        Route::get('admin/{shopSlug}/transactions', [\App\Http\Controllers\Api\AdminController::class, 'transactions']);
 
-        Route::get('products', [\App\Http\Controllers\Api\ProductManagementController::class, 'index']);
-        Route::post('products', [\App\Http\Controllers\Api\ProductManagementController::class, 'store']);
-        Route::put('products/{productId}', [\App\Http\Controllers\Api\ProductManagementController::class, 'update']);
-        Route::delete('products/{productId}', [\App\Http\Controllers\Api\ProductManagementController::class, 'destroy']);
+        // Menu Management
+        Route::prefix('admin/{shopSlug}/menu')->group(function () {
+            Route::get('categories', [\App\Http\Controllers\Api\CategoryManagementController::class, 'index']);
+            Route::post('categories', [\App\Http\Controllers\Api\CategoryManagementController::class, 'store']);
+            Route::put('categories/{categoryId}', [\App\Http\Controllers\Api\CategoryManagementController::class, 'update']);
+            Route::delete('categories/{categoryId}', [\App\Http\Controllers\Api\CategoryManagementController::class, 'destroy']);
 
-        Route::get('staff', [\App\Http\Controllers\Api\StaffManagementController::class, 'index']);
-        Route::post('staff', [\App\Http\Controllers\Api\StaffManagementController::class, 'store']);
-        Route::put('staff/{staffId}', [\App\Http\Controllers\Api\StaffManagementController::class, 'update']);
-        Route::delete('staff/{staffId}', [\App\Http\Controllers\Api\StaffManagementController::class, 'destroy']);
+            Route::get('products', [\App\Http\Controllers\Api\ProductManagementController::class, 'index']);
+            Route::post('products', [\App\Http\Controllers\Api\ProductManagementController::class, 'store']);
+            Route::put('products/{productId}', [\App\Http\Controllers\Api\ProductManagementController::class, 'update']);
+            Route::delete('products/{productId}', [\App\Http\Controllers\Api\ProductManagementController::class, 'destroy']);
 
-        Route::get('settings', [\App\Http\Controllers\Api\ShopSettingsController::class, 'show']);
-        Route::put('settings', [\App\Http\Controllers\Api\ShopSettingsController::class, 'update']);
+            Route::get('staff', [\App\Http\Controllers\Api\StaffManagementController::class, 'index']);
+            Route::post('staff', [\App\Http\Controllers\Api\StaffManagementController::class, 'store']);
+            Route::put('staff/{staffId}', [\App\Http\Controllers\Api\StaffManagementController::class, 'update']);
+            Route::delete('staff/{staffId}', [\App\Http\Controllers\Api\StaffManagementController::class, 'destroy']);
 
-        Route::get('tables', [\App\Http\Controllers\Api\TableManagementController::class, 'index']);
-        Route::post('tables', [\App\Http\Controllers\Api\TableManagementController::class, 'store']);
-        Route::put('tables/{tableId}', [\App\Http\Controllers\Api\TableManagementController::class, 'update']);
-        Route::delete('tables/{tableId}', [\App\Http\Controllers\Api\TableManagementController::class, 'destroy']);
+            Route::get('settings', [\App\Http\Controllers\Api\ShopSettingsController::class, 'show']);
+            Route::put('settings', [\App\Http\Controllers\Api\ShopSettingsController::class, 'update']);
 
-        // Option Sets Management (Custom Presets)
-        Route::get('option-sets', [\App\Http\Controllers\Api\OptionSetController::class, 'index']);
-        Route::post('option-sets', [\App\Http\Controllers\Api\OptionSetController::class, 'store']);
-        Route::put('option-sets/{optionSet}', [\App\Http\Controllers\Api\OptionSetController::class, 'update']);
-        Route::delete('option-sets/{optionSet}', [\App\Http\Controllers\Api\OptionSetController::class, 'destroy']);
+            Route::get('tables', [\App\Http\Controllers\Api\TableManagementController::class, 'index']);
+            Route::post('tables', [\App\Http\Controllers\Api\TableManagementController::class, 'store']);
+            Route::put('tables/{tableId}', [\App\Http\Controllers\Api\TableManagementController::class, 'update']);
+            Route::delete('tables/{tableId}', [\App\Http\Controllers\Api\TableManagementController::class, 'destroy']);
+
+            // Option Sets Management (Custom Presets)
+            Route::get('option-sets', [\App\Http\Controllers\Api\OptionSetController::class, 'index']);
+            Route::post('option-sets', [\App\Http\Controllers\Api\OptionSetController::class, 'store']);
+            Route::put('option-sets/{optionSet}', [\App\Http\Controllers\Api\OptionSetController::class, 'update']);
+            Route::delete('option-sets/{optionSet}', [\App\Http\Controllers\Api\OptionSetController::class, 'destroy']);
+        });
     });
 });
 

@@ -11,12 +11,18 @@ const orderId = route.params.orderId as string;
 const processing = ref(false);
 const order = ref<any>(null);
 const loading = ref(true);
+const md5 = ref<string | null>(null);
 let pollInterval: any = null;
 
 async function fetchOrderDetails() {
   try {
     const response = await guestApi.getOrderStatus(Number(orderId));
     order.value = response.data;
+
+    // Store MD5 for polling
+    if (order.value.khqr_md5) {
+      md5.value = order.value.khqr_md5;
+    }
 
     if (order.value.payment_status === "paid") {
       handleSuccess();
@@ -26,6 +32,27 @@ async function fetchOrderDetails() {
     toast.error("Could not load order details");
   } finally {
     loading.value = false;
+  }
+}
+
+async function checkPaymentStatus() {
+  if (!md5.value || processing.value) return;
+
+  try {
+    // Call the check-status-single endpoint which calls Bakong service
+    const response = await guestApi.checkStatusSingle(md5.value);
+
+    // Response structure: { data: [ResultObject] }
+    // ResultObject: { responseCode: 0, responseMessage: "Success", ... }
+    const results = response.data.data || [];
+    const result = results[0];
+
+    if (result && result.responseCode === 0) {
+      handleSuccess();
+    }
+  } catch (error) {
+    // Silent fail for polling errors
+    console.error("Polling check failed", error);
   }
 }
 
@@ -40,8 +67,16 @@ function handleSuccess() {
 onMounted(async () => {
   await fetchOrderDetails();
 
-  // Poll every 5 seconds for payment status
-  pollInterval = setInterval(fetchOrderDetails, 5000);
+  // Poll every 3 seconds
+  pollInterval = setInterval(async () => {
+    // 1. Refresh basic order details (in case specific webhook updated it)
+    await fetchOrderDetails();
+
+    // 2. Active check using MD5 if available and still pending
+    if (md5.value && order.value?.payment_status === "pending") {
+      await checkPaymentStatus();
+    }
+  }, 3000);
 });
 
 onUnmounted(() => {

@@ -56,7 +56,7 @@ export const usePosStore = defineStore("pos", () => {
       (item) =>
         item.product.id === product.id &&
         JSON.stringify(item.variant) === JSON.stringify(variant) &&
-        JSON.stringify(item.options) === JSON.stringify(options)
+        JSON.stringify(item.options) === JSON.stringify(options),
     );
 
     if (existing) {
@@ -97,7 +97,7 @@ export const usePosStore = defineStore("pos", () => {
     shopId: number,
     paymentMethod: "cash" | "khqr",
     paymentCurrency: "USD" | "KHR" = "USD",
-    receivedAmount: number = 0
+    receivedAmount: number = 0,
   ) {
     processingPayment.value = true;
     try {
@@ -126,7 +126,9 @@ export const usePosStore = defineStore("pos", () => {
         }),
       };
 
-      const response = await apiClient.post("/staff/orders", payload);
+      const response = await apiClient.post("/staff/orders", payload, {
+        skipLoading: paymentMethod === "khqr",
+      } as any);
 
       if (response.data.success) {
         // Only clear cart immediately for direct payments (Cash/Dashboard)
@@ -148,7 +150,7 @@ export const usePosStore = defineStore("pos", () => {
   async function updatePaymentStatus(
     orderId: number,
     status: string,
-    options: any = {}
+    options: any = {},
   ) {
     loading.value = true;
     try {
@@ -157,7 +159,7 @@ export const usePosStore = defineStore("pos", () => {
         {
           status,
           ...options, // e.g., received_amount, payment_method, etc.
-        }
+        },
       );
       return response.data;
     } catch (e) {

@@ -2,6 +2,7 @@
   "common": {
     "save": "រក្សាទុក",
     "cancel": "បោះបង់",
+    "added": "បានបន្ថែម",
     "delete": "លុប",
     "edit": "កែសម្រួល",
     "add": "បន្ថែម",
@@ -131,7 +132,8 @@
     "poweredBy": "ដំណើរការដោយ Coffee-POS SaaS",
     "thankYou": "សូមអរគុណសម្រាប់ការមកលេង",
     "freeWifi": "WiFi ឥតគិតថ្លៃ",
-    "password": "លេខសម្ងាត់"
+    "password": "លេខសម្ងាត់",
+    "queueNumber": "លេខកុម្ម៉ង់"
   },
   "pos": {
     "pointOfSale": "ចំណុចលក់",

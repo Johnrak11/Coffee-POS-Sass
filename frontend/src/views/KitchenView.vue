@@ -8,7 +8,7 @@ const loading = ref(true);
 let pollInterval: any = null;
 
 const notificationSound = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+  "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
 );
 
 watch(
@@ -19,7 +19,7 @@ watch(
         .play()
         .catch((e) => console.warn("Audio play blocked:", e));
     }
-  }
+  },
 );
 
 // Real-time polling (every 5 seconds)
@@ -133,7 +133,10 @@ async function handleNextStatus(order: any) {
         >
           <div>
             <div class="text-sm text-app-muted dark:text-gray-400 font-mono">
-              {{ order.order_number }}
+              <span class="font-bold text-primary-500"
+                >#{{ order.queue_number || "?" }}</span
+              >
+              • {{ order.order_number }}
             </div>
             <div class="text-xl font-bold text-app-text dark:text-white">
               {{ order.shop_table_name }}
