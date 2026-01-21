@@ -12,24 +12,7 @@ fi
 
 echo "Deploying KafeSrok..."
 
-# 1. Check and Create Database (using existing kafesrok-db)
-# We assume kafesrok-db is running and accessible via docker exec
-DB_NAME=${DB_DATABASE:-laravel}
-mysql_pass=${DB_PASSWORD:-secret}
-
-if [ -z "$DB_NAME" ]; then
-  echo "DB_DATABASE is not set. Skipping DB creation check."
-else
-  echo "Checking database '$DB_NAME' in container 'kafesrok-db'..."
-  # Use root/secret (or loaded DB_PASSWORD) as per docker-compose default
-  docker exec kafesrok-db mariadb -uroot -p"$mysql_pass" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
-  echo "Database check complete."
-fi
-
-# 2. Deploy Containers
-# Pull not needed if building locally, but good practice if using images
-# docker compose pull
-
+# 1. Deploy Containers (DB will be created automatically by Docker)
 echo "Building and starting containers..."
 docker compose down --remove-orphans || true
 docker compose up -d --build
