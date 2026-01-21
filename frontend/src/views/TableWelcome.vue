@@ -13,7 +13,10 @@ onMounted(async () => {
     const success = await sessionStore.scanTable(qrToken);
 
     if (success && sessionStore.shopSlug) {
-      router.push(`/menu/${sessionStore.shopSlug}`);
+      router.replace(`/menu/${sessionStore.shopSlug}`);
+    } else {
+      // Handle error or stay on loading/error state
+      console.error("Failed to scan table");
     }
   }
 });
@@ -23,45 +26,26 @@ onMounted(async () => {
   <div
     class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-accent-50 p-6"
   >
-    <div
-      class="glass-card p-8 rounded-3xl max-w-md w-full text-center animate-scale-in"
-    >
-      <div class="mb-6">
-        <div
-          class="w-20 h-20 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full mx-auto mb-4 flex items-center justify-center"
+    <div class="text-center">
+      <div
+        class="w-20 h-20 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg animate-pulse"
+      >
+        <svg
+          class="w-10 h-10 text-primary-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
-          <svg
-            class="w-10 h-10 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-        </div>
-        <h1 class="text-2xl font-display font-bold text-gray-900">
-          Welcome to {{ sessionStore.shopName || "Coffee Shop" }}
-        </h1>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+          />
+        </svg>
       </div>
-
-      <div class="mb-6">
-        <p class="text-gray-600 mb-2">Table</p>
-        <div class="text-4xl font-display font-bold text-primary-700">
-          {{ sessionStore.tableNumber || "..." }}
-        </div>
-      </div>
-
-      <div class="space-y-3">
-        <div class="skeleton h-4 w-3/4 mx-auto rounded"></div>
-        <div class="skeleton h-4 w-1/2 mx-auto rounded"></div>
-      </div>
-
-      <p class="text-sm text-gray-500 mt-6">Loading your menu...</p>
+      <h2 class="text-xl font-bold text-gray-800 mb-2">Finding Table...</h2>
+      <p class="text-gray-500 text-sm">Please wait a moment.</p>
     </div>
   </div>
 </template>

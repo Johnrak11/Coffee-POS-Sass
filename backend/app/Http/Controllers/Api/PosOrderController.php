@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\OrderService;
 use App\Models\Shop;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PosOrderController extends Controller
 {
@@ -46,7 +47,8 @@ class PosOrderController extends Controller
                 $validated['payment_method'],
                 $validated['payment_currency'] ?? 'USD',
                 $validated['received_amount'] ?? 0,
-                auth()->id()
+                $validated['received_amount'] ?? 0,
+                Auth::id()
             );
 
             // KHQR Integration: Generate QR immediately if method is KHQR
@@ -113,7 +115,6 @@ class PosOrderController extends Controller
                 'success' => true,
                 'order' => $order->load(['items.product', 'items.variant', 'items.options'])
             ]);
-
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
@@ -172,6 +173,26 @@ class PosOrderController extends Controller
         $order = \App\Models\Order::findOrFail($id);
 
         $updatedOrder = $this->orderService->updatePaymentStatus($order, $request->status);
+
+        // Auto-close session if payment is validated
+        if ($request->status === 'paid' && $order->tableSession) {
+            app(\App\Services\TableSessionService::class)->completeSession($order->tableSession);
+        }
+
+        return response()->json([
+            'success' => true,
+            'order' => $updatedOrder
+        ]);
+    }
+
+    /**
+     * Confirm order
+     * POST /api/staff/orders/{order}/confirm
+     */
+    public function confirm(Request $request, $id)
+    {
+        $order = \App\Models\Order::findOrFail($id);
+        $updatedOrder = $this->orderService->confirmOrder($order);
 
         return response()->json([
             'success' => true,

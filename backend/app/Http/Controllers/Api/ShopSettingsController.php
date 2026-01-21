@@ -32,10 +32,18 @@ class ShopSettingsController extends Controller
             'merchant_city' => 'nullable|string|max:100',
             'bakong_telegram_chat_id' => 'nullable|string|max:100',
             'theme_mode' => 'nullable|in:light,dark',
+            'trusted_ips' => 'nullable|array',
+            'trusted_ips.*' => 'string|ip',
+            'ip_check_enabled' => 'boolean',
         ]);
 
         $shop->update($validated);
 
         return response()->json($shop);
+    }
+
+    public function getIp(Request $request)
+    {
+        return response()->json(['ip' => $request->ip()]);
     }
 }

@@ -2,14 +2,13 @@
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useKitchenStore } from "@/stores/kitchen";
 import { BaseButton } from "@/components/common";
+import kitchenAlert from "@/assets/ktchen-alert.mp3";
 
 const kitchenStore = useKitchenStore();
 const loading = ref(true);
 let pollInterval: any = null;
 
-const notificationSound = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
-);
+const notificationSound = new Audio(kitchenAlert);
 
 watch(
   () => kitchenStore.orders.length,

@@ -57,7 +57,7 @@ async function fetchOrders(page = 1) {
   if (!authStore.shop) return;
   loading.value = true;
   try {
-    const params = {
+    const params: Record<string, any> = {
       shop_id: authStore.shop.id,
       page: page,
       payment_status: filters.value.status,
@@ -68,8 +68,9 @@ async function fetchOrders(page = 1) {
 
     // Clean empty params
     Object.keys(params).forEach((key) => {
-      if (params[key] === "" || params[key] === null) {
-        delete params[key];
+      const k = key as keyof typeof params;
+      if (params[k] === "" || params[k] === null) {
+        delete params[k];
       }
     });
 
@@ -132,6 +133,19 @@ async function updateStatus(order: any, status: string) {
   } catch (e) {
     console.error(e);
     alert("Failed to update status");
+  }
+}
+
+async function confirmOrder(order: any) {
+  try {
+    const response = await apiClient.post(`/staff/orders/${order.id}/confirm`);
+    if (response.data.success) {
+      uiStore.showToast("success", "Order Confirmed");
+      fetchOrders(pagination.value.current_page);
+    }
+  } catch (e) {
+    console.error(e);
+    uiStore.showToast("error", "Failed to confirm order");
   }
 }
 
@@ -276,6 +290,13 @@ function formatAmount(order: any) {
               </td>
               <td class="px-6 py-4">
                 <span
+                  v-if="order.confirmation_status === 'pending_confirmation'"
+                  class="px-2 py-1 rounded text-xs font-bold uppercase bg-yellow-500/20 text-yellow-500 animate-pulse"
+                >
+                  Confirm Needed
+                </span>
+                <span
+                  v-else
                   :class="[
                     'px-2 py-1 rounded text-xs font-bold uppercase',
                     order.payment_status === 'paid'
@@ -321,7 +342,30 @@ function formatAmount(order: any) {
                   </svg>
                 </button>
                 <button
-                  v-if="order.payment_status === 'pending'"
+                  v-if="order.confirmation_status === 'pending_confirmation'"
+                  @click="confirmOrder(order)"
+                  class="p-2 bg-yellow-500/10 hover:bg-yellow-500/20 rounded-lg text-yellow-500 hover:text-yellow-400 transition-colors"
+                  title="Confirm Order"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </button>
+                <button
+                  v-if="
+                    order.payment_status === 'pending' &&
+                    order.confirmation_status !== 'pending_confirmation'
+                  "
                   @click="markAsPaid(order)"
                   class="p-2 bg-green-500/10 hover:bg-green-500/20 rounded-lg text-green-400 hover:text-green-300 transition-colors"
                   title="Mark as Paid"

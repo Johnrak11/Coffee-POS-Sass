@@ -56,7 +56,11 @@ apiClient.interceptors.response.use(
         case 401:
           // Unauthorized - clear auth and redirect to login
           // but IGNORE if we are actually trying to login (which returns 401 on failure)
-          if (!error.config.url?.endsWith("/auth")) {
+          // AND ignore if it is a guest API call
+          if (
+            !error.config.url?.endsWith("/auth") &&
+            !error.config.url?.includes("/guest/")
+          ) {
             localStorage.removeItem("staff_token");
             window.location.href = "/login";
           }

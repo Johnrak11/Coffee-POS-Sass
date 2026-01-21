@@ -22,6 +22,7 @@ class Order extends Model
         'payment_currency',
         'exchange_rate_snapshot',
         'received_amount',
+        'confirmation_status',
     ];
 
     protected $casts = [

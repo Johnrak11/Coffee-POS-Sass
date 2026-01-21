@@ -63,7 +63,7 @@ function onVerify() {
         class="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-200 text-sm"
       >
         <svg
-          class="w-5 h-5 flex-shrink-0"
+          class="w-5 h-5 shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

@@ -5,7 +5,13 @@ import type { AxiosResponse } from "axios";
 export interface GuestSession {
   session_token: string;
   table_id: number;
+  table_number: string;
   shop_id: number;
+  shop: {
+    name: string;
+    slug: string;
+    logo_url: string | null;
+  };
 }
 
 export interface CartItem {
@@ -13,7 +19,18 @@ export interface CartItem {
   product_id: number;
   quantity: number;
   notes?: string;
-  product?: any;
+  product: {
+    id: number;
+    name: string;
+    price: number;
+    image_url: string | null;
+  };
+}
+
+export interface CartResponse {
+  items: CartItem[];
+  total: number;
+  item_count: number;
 }
 
 // API Functions
@@ -49,7 +66,7 @@ export const guestApi = {
    */
   async getCart(
     sessionToken: string,
-  ): Promise<AxiosResponse<{ cart: CartItem[] }>> {
+  ): Promise<AxiosResponse<CartResponse>> {
     return apiClient.get(`/guest/cart/${sessionToken}`);
   },
 

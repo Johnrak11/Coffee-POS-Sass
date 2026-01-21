@@ -11,7 +11,7 @@ const props = defineProps<{
     cashReceived: number;
     change: number;
     orderNumber: string;
-    queueNumber?: number;
+    queueNumber?: string | number;
     shopName?: string;
     date?: string;
     currency?: "USD" | "KHR";
@@ -94,11 +94,11 @@ function calculateItemTotal(item: any) {
 
       <!-- Receipt Modal -->
       <div
-        class="relative bg-app-surface w-full max-w-sm rounded-lg shadow-2xl overflow-hidden border border-app-border print:border-none print:shadow-none print:w-full print:max-w-none print:static"
+        class="relative bg-app-surface w-full max-w-sm rounded-lg shadow-2xl flex flex-col max-h-[90vh] border border-app-border print:border-none print:shadow-none print:w-full print:max-w-none print:max-h-none print:static"
       >
         <!-- Print Actions (Hide in print) -->
         <div
-          class="bg-app-bg p-4 flex justify-between items-center print:hidden border-b border-app-border"
+          class="bg-app-bg p-4 flex justify-between items-center print:hidden border-b border-app-border shrink-0"
         >
           <button
             @click="$emit('close')"
@@ -151,7 +151,7 @@ function calculateItemTotal(item: any) {
 
         <!-- Actual Receipt Content -->
         <div
-          class="p-6 print:p-0 bg-white text-gray-900 font-mono text-sm leading-relaxed receipt-content"
+          class="p-6 print:p-0 bg-white text-gray-900 font-mono text-sm leading-relaxed receipt-content flex-1 overflow-y-auto"
         >
           <div class="text-center mb-6">
             <h1 class="text-xl font-bold uppercase mb-2">

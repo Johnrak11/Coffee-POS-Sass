@@ -37,6 +37,18 @@ class GuestController extends Controller
             'shop' => [
                 'name' => $session->shopTable->shop?->name ?? 'Unknown Shop',
                 'slug' => $session->shopTable->shop?->slug ?? '',
+                'logo_url' => $session->shopTable->shop?->logo_url ?? null,
+                'cash_payment_allowed' => (function () use ($session) {
+                    $shop = $session->shopTable->shop;
+                    if (!$shop) return false;
+
+                    if (!$shop->ip_check_enabled) return true;
+
+                    $userIp = request()->ip();
+                    $trustedIps = $shop->trusted_ips ?? [];
+
+                    return in_array($userIp, $trustedIps);
+                })(),
             ],
         ]);
     }

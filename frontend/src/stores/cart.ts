@@ -3,18 +3,7 @@ import { ref, computed } from "vue";
 import guestApi from "@/api/guest";
 import { useSessionStore } from "./session";
 
-interface CartItem {
-  id: number;
-  product_id: number;
-  quantity: number;
-  notes: string | null;
-  product: {
-    id: number;
-    name: string;
-    price: number;
-    image_url: string | null;
-  };
-}
+import type { CartItem } from "@/api/guest";
 
 export const useCartStore = defineStore("cart", () => {
   const sessionStore = useSessionStore();
@@ -57,7 +46,18 @@ export const useCartStore = defineStore("cart", () => {
       });
       await fetchCart();
       return true;
-    } catch (error) {
+      return true;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        import("vue-sonner").then(({ toast }) => {
+          toast.error("Session Expired", {
+            description:
+              "Your session has expired. Please scan the QR code on your table again.",
+            duration: 8000,
+          });
+        });
+        return false;
+      }
       console.error("Failed to add item:", error);
       return false;
     }

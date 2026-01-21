@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Utility Routes
+Route::get('utils/ip', [\App\Http\Controllers\Api\ShopSettingsController::class, 'getIp']);
+
 // Guest API (No Authentication Required)
 Route::prefix('guest')->group(function () {
     // QR Scanning & Session
@@ -77,7 +80,9 @@ Route::prefix('staff')->middleware([\App\Http\Middleware\CheckSubscription::clas
         });
         Route::get('orders', [\App\Http\Controllers\Api\PosOrderController::class, 'index']); // Order History
         Route::get('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'show']); // Order Details
+        Route::get('orders/{order}', [\App\Http\Controllers\Api\PosOrderController::class, 'show']); // Order Details
         Route::put('orders/{order}/payment-status', [\App\Http\Controllers\Api\PosOrderController::class, 'updatePaymentStatus']); // Update Status
+        Route::post('orders/{order}/confirm', [\App\Http\Controllers\Api\PosOrderController::class, 'confirm']); // Confirm Order
 
         // Kitchen API
         Route::get('kitchen/{shopSlug}/orders', [\App\Http\Controllers\Api\KitchenController::class, 'index']);
@@ -120,7 +125,3 @@ Route::prefix('staff')->middleware([\App\Http\Middleware\CheckSubscription::clas
         });
     });
 });
-
-
-
-

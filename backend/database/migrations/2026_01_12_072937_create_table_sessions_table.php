@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->foreignId('shop_table_id')->constrained('shop_tables')->onDelete('cascade');
             $table->string('session_token', 100)->unique(); // Browser cookie ID
             $table->string('guest_name', 50)->nullable(); // Optional: "Mr. John"
-            $table->enum('status', ['active', 'ordering', 'completed'])->default('active');
+            $table->enum('status', ['active', 'ordering', 'completed', 'closed'])->default('active');
             $table->timestamps();
 
             // Indexes

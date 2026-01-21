@@ -34,6 +34,13 @@ class Shop extends Model
         'merchant_city',
         'theme_mode',
         'bakong_telegram_chat_id',
+        'trusted_ips',
+        'ip_check_enabled',
+    ];
+
+    protected $casts = [
+        'trusted_ips' => 'array',
+        'ip_check_enabled' => 'boolean',
     ];
 
     protected $hidden = [

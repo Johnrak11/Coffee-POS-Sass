@@ -26,7 +26,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 const { t } = useI18n();
@@ -118,7 +118,7 @@ function downloadReport() {
   link.setAttribute("href", url);
   link.setAttribute(
     "download",
-    `report_${new Date().toISOString().split("T")[0]}.csv`
+    `report_${new Date().toISOString().split("T")[0]}.csv`,
   );
   link.style.visibility = "hidden";
   document.body.appendChild(link);

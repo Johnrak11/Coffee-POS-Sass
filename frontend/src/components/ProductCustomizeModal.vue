@@ -22,7 +22,7 @@ const variantGroups = computed(() => {
     if (!groups[variant.name]) {
       groups[variant.name] = [];
     }
-    groups[variant.name].push(variant);
+    groups[variant.name]?.push(variant);
   });
   return groups;
 });
@@ -34,7 +34,7 @@ const totalPrice = computed(() => {
     (sum: number, variant: any) => {
       return sum + Number(variant.extra_price || 0);
     },
-    0
+    0,
   );
   return (basePrice + extras) * quantity.value;
 });
@@ -48,15 +48,16 @@ watch(
     if (newProduct?.variants) {
       const groups = variantGroups.value;
       Object.keys(groups).forEach((key) => {
+        const group = groups[key];
         // Default to first option
         // In a real app, maybe check for 'is_default' flag
-        if (groups[key].length > 0) {
-          selections.value[key] = groups[key][0];
+        if (group && group.length > 0) {
+          selections.value[key] = group[0];
         }
       });
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function addToCart() {

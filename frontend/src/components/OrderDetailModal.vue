@@ -12,7 +12,7 @@ const subtotal = computed(() => {
   return (
     props.order?.items.reduce(
       (sum: number, item: any) => sum + Number(item.subtotal),
-      0
+      0,
     ) || 0
   );
 });
@@ -37,7 +37,7 @@ function formatTotal(order: any) {
   <Teleport to="body">
     <div
       v-if="show"
-      class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      class="fixed inset-0 z-100 flex items-center justify-center p-4"
     >
       <!-- Backdrop -->
       <div
@@ -95,10 +95,10 @@ function formatTotal(order: any) {
                   order?.payment_status === 'paid'
                     ? 'bg-green-500/20 text-green-500'
                     : order?.payment_status === 'pending'
-                    ? 'bg-orange-500/20 text-orange-500'
-                    : order?.payment_status === 'rejected'
-                    ? 'bg-red-500/20 text-red-500'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500',
+                      ? 'bg-orange-500/20 text-orange-500'
+                      : order?.payment_status === 'rejected'
+                        ? 'bg-red-500/20 text-red-500'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500',
                 ]"
               >
                 {{ order?.payment_status }}

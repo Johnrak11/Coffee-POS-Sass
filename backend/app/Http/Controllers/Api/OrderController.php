@@ -41,6 +41,27 @@ class OrderController extends Controller
             return response()->json(['error' => 'Invalid session'], 404);
         }
 
+        // Security Check: Enforce IP restrictions for Cash Payments
+        if ($validated['payment_method'] === 'cash') {
+            $shop = $session->shopTable->shop;
+            if ($shop && $shop->ip_check_enabled) {
+                $userIp = $request->ip();
+                $trustedIps = $shop->trusted_ips ?? [];
+
+                // Allow localhost for dev if it's in the list OR always allow if you want dev ease? 
+                // Better to be strict: Must be in trusted list.
+                // Note: If user added local IP (192...) but accesses via localhost (127...), this fails.
+                // That is correct behavior for security.
+
+                if (!in_array($userIp, $trustedIps)) {
+                    return response()->json([
+                        'error' => 'Cash payment is not allowed from this network. Please connect to Shop Wi-Fi.',
+                        'code' => 'IP_RESTRICTED'
+                    ], 403);
+                }
+            }
+        }
+
         try {
             $order = $this->orderService->createFromCart($session, $validated['payment_method']);
 
@@ -249,7 +270,6 @@ class OrderController extends Controller
             } else {
                 return response()->json(['error' => 'Payment not verified', 'details' => $result], 400);
             }
-
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }

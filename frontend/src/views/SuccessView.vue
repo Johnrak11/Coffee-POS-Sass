@@ -21,7 +21,6 @@ const receiptData = computed(() => {
     total: Number(o.total_amount),
     cashReceived: Number(o.received_amount || o.total_amount),
     change: Number(o.change || 0),
-    change: Number(o.change || 0),
     orderNumber: o.order_number,
     queueNumber: o.queue_number,
     shopName: o.shop?.name || sessionStore.shopName,
@@ -96,7 +95,7 @@ function handleDownloadReceipt() {
           class="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col items-center justify-center mb-6 relative overflow-hidden"
         >
           <div
-            class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-success-400 to-green-600"
+            class="absolute top-0 left-0 w-full h-2 bg-linear-gradient-to-r from-success-400 to-green-600"
           ></div>
           <span
             class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2"

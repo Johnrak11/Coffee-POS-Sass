@@ -8,7 +8,7 @@ const themeStore = useThemeStore();
 const router = useRouter();
 
 function logout() {
-  authStore.logoutUser();
+  authStore.logout();
   router.push("/login"); // Back to staff selection
 }
 

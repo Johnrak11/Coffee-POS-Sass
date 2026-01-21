@@ -30,7 +30,45 @@ const form = ref({
   theme_mode: "light",
   wifi_ssid: "",
   wifi_password: "",
+  // Trusted Networks
+  trusted_ips: [] as string[],
+  ip_check_enabled: false,
 });
+
+async function addCurrentNetwork() {
+  uiStore.showToast("info", "Detecting network...");
+  try {
+    const res = await apiClient.get("/utils/ip");
+    const ip = res.data.ip;
+    if (ip) {
+      if (ip === "127.0.0.1" || ip === "::1") {
+        uiStore.showToast(
+          "warning",
+          "Localhost Detected (127.0.0.1). This is normal for development. To test real Wi-Fi IPs, access this page from your Phone.",
+        );
+      } else {
+        uiStore.showToast("success", "Current network added!");
+      }
+      addTrustedIp(ip);
+    }
+  } catch (e) {
+    console.error(e);
+    uiStore.showToast("error", "Failed to detect IP");
+  }
+}
+
+const manualIp = ref("");
+function addTrustedIp(ip: string) {
+  if (!form.value.trusted_ips) form.value.trusted_ips = [];
+  if (!form.value.trusted_ips.includes(ip)) {
+    form.value.trusted_ips.push(ip);
+  }
+  manualIp.value = "";
+}
+
+function removeTrustedIp(index: number) {
+  form.value.trusted_ips.splice(index, 1);
+}
 
 onMounted(async () => {
   await fetchSettings();
@@ -40,11 +78,34 @@ async function fetchSettings() {
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
   try {
     const response = await apiClient.get(
-      `/staff/admin/${shopSlug}/menu/settings`
+      `/staff/admin/${shopSlug}/menu/settings`,
     );
-    form.value = response.data;
-    authStore.shop = response.data;
-    console.log("Settings  loaded and shop updated:", authStore.shop);
+    const data = response.data;
+
+    // Explicitly map fields to preserve defaults and ensures types
+    form.value.name = data.name;
+    form.value.logo_url = data.logo_url;
+    form.value.address = data.address;
+    form.value.phone = data.phone;
+    form.value.receipt_footer = data.receipt_footer;
+    form.value.currency_symbol = data.currency_symbol || "$";
+    form.value.exchange_rate = data.exchange_rate || 4100;
+    form.value.primary_color = data.primary_color || "#F97316";
+    form.value.bakong_account_id = data.bakong_account_id;
+    form.value.merchant_name = data.merchant_name;
+    form.value.merchant_city = data.merchant_city;
+    form.value.bakong_telegram_chat_id = data.bakong_telegram_chat_id;
+    form.value.theme_mode = data.theme_mode || "light";
+    form.value.wifi_ssid = data.wifi_ssid;
+    form.value.wifi_password = data.wifi_password;
+
+    // Trusted Networks
+    form.value.trusted_ips = data.trusted_ips || [];
+    // Ensure boolean cast (sometimes API returns 1/0)
+    form.value.ip_check_enabled = Boolean(data.ip_check_enabled);
+
+    authStore.shop = data;
+    console.log("Settings loaded:", form.value);
   } catch (e) {
     console.error(e);
     uiStore.showToast("error", "Failed to load settings");
@@ -61,13 +122,13 @@ async function uploadToCloudinary(file: File) {
   formData.append("file", file);
   formData.append(
     "upload_preset",
-    import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "coffee-pos-unsigned"
+    import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "coffee-pos-unsigned",
   );
   formData.append("folder", "coffee-pos/logos");
 
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    { method: "POST", body: formData }
+    { method: "POST", body: formData },
   );
 
   if (!response.ok) throw new Error("Image upload failed");
@@ -104,9 +165,7 @@ async function saveSettings() {
 </script>
 
 <template>
-  <div
-    class="p-8 max-w-4xl bg-bg-secondary dark:bg-gray-900 min-h-screen"
-  >
+  <div class="p-8 max-w-4xl bg-bg-secondary dark:bg-gray-900 min-h-screen">
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-text-primary dark:text-white">
         {{ t("settings.shopSettings") }}
@@ -185,23 +244,20 @@ async function saveSettings() {
             </div>
           </div>
 
-          
           <!-- Receipt & WiFi Configuration -->
           <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
             <h3
               class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"
             >
-              <span
-                class="w-1.5 h-6 bg-emerald-500 rounded-full"
-              ></span>
+              <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
               {{ t("settings.receiptDetails") }}
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="md:col-span-2">
-                 <label
+                <label
                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
                 >
-                 {{ t("settings.receiptFooter") }}
+                  {{ t("settings.receiptFooter") }}
                 </label>
                 <textarea
                   v-model="form.receipt_footer"
@@ -209,7 +265,7 @@ async function saveSettings() {
                   class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                   placeholder="Thank you for visiting! See you again soon."
                 ></textarea>
-                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   Printed at the bottom of every receipt.
                 </p>
               </div>
@@ -225,7 +281,7 @@ async function saveSettings() {
                 placeholder="12345678"
               />
               <div class="md:col-span-2">
-                 <p class="text-xs text-gray-400 dark:text-gray-500">
+                <p class="text-xs text-gray-400 dark:text-gray-500">
                   WiFi details will be printed on the receipt for customers.
                 </p>
               </div>
@@ -257,6 +313,155 @@ async function saveSettings() {
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
                 Used for cash payments in Khmer Riel.
               </p>
+            </div>
+          </div>
+
+          <!-- Trusted Networks -->
+          <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-6">
+              <h3
+                class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"
+              >
+                <span class="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+                Trusted Networks (Wi-Fi)
+              </h3>
+              <div class="flex items-center gap-3">
+                <span
+                  class="text-sm text-gray-500 dark:text-gray-400 font-medium"
+                >
+                  {{ form.ip_check_enabled ? "Enabled" : "Disabled" }}
+                </span>
+                <button
+                  @click="form.ip_check_enabled = !form.ip_check_enabled"
+                  :class="[
+                    'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
+                    form.ip_check_enabled
+                      ? 'bg-primary-600'
+                      : 'bg-gray-200 dark:bg-gray-700',
+                  ]"
+                >
+                  <span
+                    aria-hidden="true"
+                    :class="[
+                      'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                      form.ip_check_enabled ? 'translate-x-5' : 'translate-x-0',
+                    ]"
+                  />
+                </button>
+              </div>
+            </div>
+
+            <div v-if="form.ip_check_enabled" v-auto-animate class="space-y-6">
+              <div
+                class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-sm text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-800"
+              >
+                Customers must be connected to one of these networks to pay with
+                Cash. Otherwise, they will be restricted to KHQR payment only.
+              </div>
+
+              <!-- Trusted IPs List -->
+              <div
+                v-if="form.trusted_ips && form.trusted_ips.length > 0"
+                class="space-y-3"
+              >
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  Allowed IP Addresses
+                </label>
+                <div
+                  v-for="(ip, index) in form.trusted_ips"
+                  :key="index"
+                  class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl"
+                >
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400"
+                    >
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"
+                        />
+                      </svg>
+                    </div>
+                    <span
+                      class="font-mono text-sm text-gray-700 dark:text-gray-300"
+                    >
+                      {{ ip }}
+                    </span>
+                  </div>
+                  <button
+                    @click="removeTrustedIp(index)"
+                    class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <svg
+                      class="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Add Networks Actions -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  @click="addCurrentNetwork"
+                  type="button"
+                  class="flex items-center justify-center gap-2 px-4 py-3 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-bold rounded-xl border border-primary-100 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-all"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Add Current Network
+                </button>
+
+                <div class="flex gap-2">
+                  <input
+                    v-model="manualIp"
+                    type="text"
+                    placeholder="Enter IP (e.g. 192.168.1.1)"
+                    class="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all font-mono text-sm"
+                    @keyup.enter="manualIp && addTrustedIp(manualIp)"
+                  />
+                  <button
+                    @click="manualIp && addTrustedIp(manualIp)"
+                    :disabled="!manualIp"
+                    class="px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-xl font-bold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-sm text-gray-400 italic">
+              Enable to restrict Cash payments to specific Wi-Fi networks only.
             </div>
           </div>
         </div>
@@ -301,7 +506,7 @@ async function saveSettings() {
             class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-2xl flex gap-3"
           >
             <svg
-              class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+              class="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -328,9 +533,7 @@ async function saveSettings() {
             :loading="saving"
             :disabled="saving"
           >
-            {{
-              saving ? t("common.loading") : t("common.save")
-            }}
+            {{ saving ? t("common.loading") : t("common.save") }}
           </BaseButton>
         </div>
       </div>

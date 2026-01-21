@@ -34,9 +34,8 @@ const receiptData = ref({
   receiptFooter: "",
   wifiSsid: "",
   wifiPassword: "",
+  queueNumber: "",
 });
-
-// ...
 
 function handleKhqrSuccess(order: any) {
   showPaymentModal.value = false;
@@ -194,13 +193,11 @@ function handleProductClick(product: any) {
   } else {
     // Direct add without customization
     posStore.addToOrder(product, null, []);
-    toast.success(`${product.name} ${t("common.added") || "added"}`);
   }
 }
 
 function handleCustomizeAdd(data: any) {
   posStore.addToOrder(data.product, null, data.options);
-  toast.success(`${data.product.name} ${t("common.added") || "added"}`);
 }
 
 const modalInitialMethod = computed(() => {

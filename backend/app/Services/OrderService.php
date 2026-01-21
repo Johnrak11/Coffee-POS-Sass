@@ -30,6 +30,9 @@ class OrderService
         // Generate order number
         $orderNumber = $this->generateOrderNumber($session->shopTable->shop_id);
 
+        // Determine confirmation status
+        $confirmationStatus = ($paymentMethod === 'cash') ? 'pending_confirmation' : 'confirmed';
+
         // Create order
         $order = Order::create([
             'shop_id' => $session->shopTable->shop_id,
@@ -38,6 +41,7 @@ class OrderService
             'total_amount' => $cart['total'],
             'payment_method' => $paymentMethod,
             'payment_status' => 'pending',
+            'confirmation_status' => $confirmationStatus,
             'fulfillment_status' => 'queue',
         ]);
 
@@ -116,6 +120,7 @@ class OrderService
             'exchange_rate_snapshot' => $exchangeRate,
             'received_amount' => $receivedAmount,
             'user_id' => $userId,
+            'confirmation_status' => 'confirmed', // POS orders are always confirmed
         ]);
 
         // Create order items
@@ -196,6 +201,15 @@ class OrderService
     }
 
     /**
+     * Confirm order
+     */
+    public function confirmOrder(Order $order): Order
+    {
+        $order->update(['confirmation_status' => 'confirmed']);
+        return $order->fresh();
+    }
+
+    /**
      * Get orders with filters and pagination
      */
     public function getOrders(int $shopId, array $filters = [], int $perPage = 15)
@@ -231,7 +245,13 @@ class OrderService
     {
         return Order::with(['tableSession.shopTable', 'items.product', 'items.variant', 'items.options'])
             ->where('shop_id', $shopId)
+            ->where('shop_id', $shopId)
             ->whereIn('fulfillment_status', ['queue', 'preparing'])
+            ->where(function ($query) {
+                // Show if confirmed OR confirmation_status is null (legacy/pos)
+                $query->where('confirmation_status', 'confirmed')
+                    ->orWhereNull('confirmation_status');
+            })
             ->orderBy('created_at', 'asc')
             ->get();
     }

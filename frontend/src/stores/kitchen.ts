@@ -5,6 +5,7 @@ import apiClient from "@/api";
 export interface KitchenOrder {
   id: number;
   order_number: string;
+  queue_number?: string;
   created_at: string;
   fulfillment_status: "queue" | "preparing" | "served";
   table_session?: {

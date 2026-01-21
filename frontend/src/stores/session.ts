@@ -10,13 +10,16 @@ export const useSessionStore = defineStore("session", () => {
   const shopName = ref<string | null>(localStorage.getItem("shop_name"));
   const shopSlug = ref<string | null>(localStorage.getItem("shop_slug"));
   const shopLogo = ref<string | null>(localStorage.getItem("shop_logo"));
+  const cashPaymentAllowed = ref<boolean>(
+    localStorage.getItem("cash_payment_allowed") === "true"
+  );
 
   const isActive = computed(() => !!sessionToken.value);
 
   async function scanTable(qrToken: string) {
     try {
       const response = await guestApi.scanTable(qrToken);
-      const data = response.data;
+      const data = response.data as any;
 
       sessionToken.value = data.session_token;
       tableNumber.value = data.table_number;
@@ -32,7 +35,10 @@ export const useSessionStore = defineStore("session", () => {
       if (data.shop.logo_url) {
         localStorage.setItem("shop_logo", data.shop.logo_url);
       }
-
+      
+      cashPaymentAllowed.value = data.shop.cash_payment_allowed;
+      localStorage.setItem("cash_payment_allowed", String(data.shop.cash_payment_allowed));
+      
       return true;
     } catch (error) {
       console.error("Failed to scan table:", error);
@@ -46,12 +52,14 @@ export const useSessionStore = defineStore("session", () => {
     shopName.value = null;
     shopSlug.value = null;
     shopLogo.value = null;
+    cashPaymentAllowed.value = false;
 
     localStorage.removeItem("session_token");
     localStorage.removeItem("table_number");
     localStorage.removeItem("shop_name");
     localStorage.removeItem("shop_slug");
     localStorage.removeItem("shop_logo");
+    localStorage.removeItem("cash_payment_allowed");
   }
 
   return {
@@ -60,6 +68,7 @@ export const useSessionStore = defineStore("session", () => {
     shopName,
     shopSlug,
     shopLogo,
+    cashPaymentAllowed,
     isActive,
     scanTable,
     clearSession,

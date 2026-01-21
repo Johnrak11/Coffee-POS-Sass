@@ -6,6 +6,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useUIStore } from "@/stores/ui";
 import { useNotificationStore } from "@/stores/notification";
 import { toast } from "vue-sonner";
+import NotificationDrawer from "@/components/common/NotificationDrawer.vue";
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
@@ -13,6 +14,8 @@ const uiStore = useUIStore();
 const notificationStore = useNotificationStore();
 const router = useRouter();
 const route = useRoute();
+
+const showNotifications = ref(false); // Drawer state
 
 let pollingInterval: any = null;
 
@@ -40,7 +43,7 @@ function handleNotificationClick(notification: any) {
 }
 
 function toggleLanguage() {
-  const newLocale = uiStore.currentLocale === "en" ? "km" : "en";
+  const newLocale = uiStore.currentLocale === "en" ? "kh" : "en";
   uiStore.setLocale(newLocale);
 }
 
@@ -248,15 +251,15 @@ function logout() {
           </div>
         </router-link>
 
-        <!-- Notification Bell (Direct Link) -->
-        <router-link
-          to="/pos/notifications"
-          class="flex items-center gap-3 p-3 rounded-xl transition-colors group relative"
+        <!-- Notification Bell (Drawer Toggle) -->
+        <button
+          @click="showNotifications = true"
+          class="flex items-center gap-3 p-3 rounded-xl transition-colors group relative w-full"
           :class="[
-            route.path === '/pos/notifications'
+            showNotifications
               ? 'bg-primary-600/20 text-primary-600 dark:text-primary-400'
               : 'text-app-muted hover:bg-app-bg hover:text-app-text',
-            themeStore.isSidebarCollapsed ? 'justify-center' : '',
+            themeStore.isSidebarCollapsed ? 'justify-center' : 'justify-start',
           ]"
         >
           <div class="relative">
@@ -298,7 +301,7 @@ function logout() {
           >
             Notifications
           </div>
-        </router-link>
+        </button>
 
         <router-link
           v-if="authStore.isOwner"
@@ -445,4 +448,6 @@ function logout() {
       <router-view />
     </main>
   </div>
+  <!-- Notification Drawer -->
+  <NotificationDrawer v-model="showNotifications" />
 </template>

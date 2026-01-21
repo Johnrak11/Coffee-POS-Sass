@@ -2,7 +2,13 @@
 import { computed } from "vue";
 
 interface ButtonProps {
-  variant?: "primary" | "secondary" | "danger" | "ghost" | "success";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "danger"
+    | "ghost"
+    | "success"
+    | "outline";
   size?: "sm" | "md" | "lg" | "xl";
   disabled?: boolean;
   loading?: boolean;
@@ -37,6 +43,8 @@ const buttonClasses = computed(() => {
       "bg-transparent text-secondary-700 hover:bg-secondary-100 focus:ring-secondary-500 dark:text-secondary-300 dark:hover:bg-secondary-800",
     success:
       "bg-success-600 text-white hover:bg-success-700 focus:ring-success-500",
+    outline:
+      "bg-transparent border border-secondary-300 text-secondary-700 hover:bg-secondary-50 focus:ring-secondary-500 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-800/50",
   };
 
   const sizes = {

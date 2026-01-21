@@ -11,6 +11,11 @@ class TableSession extends Model
         'session_token',
         'guest_name',
         'status',
+        'expires_at',
+    ];
+
+    protected $casts = [
+        'expires_at' => 'datetime',
     ];
 
     // Relationships

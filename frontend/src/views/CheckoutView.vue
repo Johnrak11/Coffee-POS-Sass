@@ -59,9 +59,19 @@ async function processCashCheckout() {
     }
   } catch (error: any) {
     toast.dismiss(loadingToast);
-    toast.error("Checkout Failed", {
-      description: error.response?.data?.error || error.message,
-    });
+
+    // Check for session expiry
+    if (error.response?.status === 404) {
+      toast.error("Session Expired", {
+        description:
+          "Your session has expired. Please scan the QR code on your table again.",
+        duration: 8000,
+      });
+    } else {
+      toast.error("Checkout Failed", {
+        description: error.response?.data?.error || error.message,
+      });
+    }
   } finally {
     isSubmitting.value = false;
   }
@@ -98,9 +108,17 @@ async function generateKhqr() {
     } else {
       throw new Error("Invalid KHQR response");
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    toast.error("Failed to generate QR Code");
+    if (error.response?.status === 404) {
+      toast.error("Session Expired", {
+        description:
+          "Your session has expired. Please scan the QR code on your table again.",
+        duration: 8000,
+      });
+    } else {
+      toast.error("Failed to generate QR Code");
+    }
     showKhqrModal.value = false;
   } finally {
     khqrLoading.value = false;
@@ -256,12 +274,22 @@ onUnmounted(() => {
             Pay with KHQR
           </button>
           <button
+            v-if="sessionStore.cashPaymentAllowed"
             @click="checkout('cash')"
             :disabled="isSubmitting"
             class="w-full py-5 bg-gray-100 rounded-2xl font-bold text-gray-900 hover:bg-gray-200 transition-all active:scale-[0.98]"
           >
             Pay with Cash
           </button>
+          <div
+            v-else
+            class="text-center text-sm text-gray-500 bg-gray-100 p-4 rounded-2xl border border-gray-200"
+          >
+            <p class="font-bold mb-1">🔒 Cash Payment Unavailable</p>
+            <p class="text-xs">
+              Please connect to the Shop Wi-Fi to pay with Cash.
+            </p>
+          </div>
         </div>
       </div>
     </div>

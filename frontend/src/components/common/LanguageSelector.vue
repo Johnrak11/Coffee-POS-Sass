@@ -1,33 +1,31 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
-import { ref, watch } from "vue";
+import { ref, computed } from "vue";
 
-const { locale, availableLocales } = useI18n();
+interface Language {
+  code: string;
+  name: string;
+  flag: string;
+}
+
+const { locale } = useI18n();
 
 const showDropdown = ref(false);
 
-const languages = [
+const languages: Language[] = [
   { code: "en", name: "English", flag: "🇬🇧" },
   { code: "kh", name: "ខ្មែរ", flag: "🇰🇭" },
 ];
 
-const currentLanguage = ref(
-  languages.find((lang) => lang.code === locale.value) || languages[0]
-);
+const currentLanguage = computed<Language>(() => {
+  return languages.find((lang) => lang.code === locale.value) ?? languages[0]!;
+});
 
 function changeLanguage(langCode: string) {
   locale.value = langCode;
-  currentLanguage.value =
-    languages.find((lang) => lang.code === langCode) || languages[0];
   localStorage.setItem("locale", langCode);
   showDropdown.value = false;
 }
-
-// Watch for external locale changes
-watch(locale, (newLocale) => {
-  currentLanguage.value =
-    languages.find((lang) => lang.code === newLocale) || languages[0];
-});
 </script>
 
 <template>

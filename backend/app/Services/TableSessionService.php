@@ -26,7 +26,18 @@ class TableSessionService
             ->first();
 
         if ($activeSession) {
-            return $activeSession->load('shopTable.shop');
+            // Check if expired
+            if ($activeSession->expires_at && $activeSession->expires_at->isPast()) {
+                // Mark as closed/expired explicitly if needed, or just create new one
+                // Ideally, we should update status to avoid multiple "active" sessions logic confusion,
+                // though the query above filters by active/ordering.
+
+                // If it was "ordering", we might want to be careful, but if it's expired, it's expired.
+                $activeSession->update(['status' => 'closed']);
+            } else {
+                // Valid session, return it
+                return $activeSession->load('shopTable.shop');
+            }
         }
 
         // Create new session
@@ -34,6 +45,7 @@ class TableSessionService
             'shop_table_id' => $shopTable->id,
             'session_token' => Str::random(100),
             'status' => 'active',
+            'expires_at' => now()->addMinutes((int) env('TABLE_SESSION_LIFETIME', 120)),
         ]);
 
         return $session->load('shopTable.shop');
@@ -44,9 +56,26 @@ class TableSessionService
      */
     public function getSession(string $sessionToken): ?TableSession
     {
-        return TableSession::with(['shopTable.shop', 'cartItems.product'])
+        $session = TableSession::with(['shopTable.shop', 'cartItems.product'])
             ->where('session_token', $sessionToken)
             ->first();
+
+        if (!$session) {
+            return null;
+        }
+
+        // Check if expired
+        if ($session->expires_at && $session->expires_at->isPast()) {
+            // Session expired
+            return null;
+        }
+
+        // Renew session if active
+        if ($session->status === 'active' || $session->status === 'ordering') {
+            $session->update(['expires_at' => now()->addMinutes((int) env('TABLE_SESSION_LIFETIME', 120))]);
+        }
+
+        return $session;
     }
 
     /**
