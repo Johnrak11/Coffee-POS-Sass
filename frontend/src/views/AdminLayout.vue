@@ -17,7 +17,7 @@ function toggleLanguage() {
 }
 
 function logout() {
-  authStore.logoutUser();
+  authStore.logout();
   router.push("/login");
 }
 
@@ -154,7 +154,9 @@ const navItems = computed(() => [
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 w-full p-3 space-y-1 overflow-y-auto overflow-x-hidden">
+      <nav
+        class="flex-1 w-full p-3 space-y-1 overflow-y-auto overflow-x-hidden"
+      >
         <router-link
           v-for="item in navItems"
           :key="item.path"
@@ -231,7 +233,11 @@ const navItems = computed(() => [
             />
           </svg>
           <span v-if="uiStore.isSidebarOpen">
-            {{ uiStore.isDarkMode ? t("settings.lightMode") : t("settings.darkMode") }}
+            {{
+              uiStore.isDarkMode
+                ? t("settings.lightMode")
+                : t("settings.darkMode")
+            }}
           </span>
         </button>
 
@@ -280,7 +286,9 @@ const navItems = computed(() => [
         <button
           @click="logout"
           class="w-full flex items-center gap-3 px-3 py-3 rounded-xl border border-app-border text-app-muted font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all duration-200"
-          :class="!uiStore.isSidebarOpen ? 'justify-center border-0' : 'justify-start'"
+          :class="
+            !uiStore.isSidebarOpen ? 'justify-center border-0' : 'justify-start'
+          "
         >
           <svg
             class="w-5 h-5 shrink-0"

@@ -4,20 +4,20 @@ A Laravel-based API backend for a modern Coffee Shop Point of Sale system with m
 
 ## Features
 
--   🏪 **Multi-tenant Architecture** - Support multiple coffee shops
--   🛒 **Advanced Product Options** - Size, Sugar, Ice, Toppings customization
--   📱 **QR Code Ordering** - Guest ordering via QR codes
--   🧑‍🍳 **Kitchen Display System** - Real-time order management
--   💳 **Payment Integration** - KHQR (Cambodian QR Payment) support
--   👥 **Role-based Access** - Super Admin, Shop Admin, Staff, Barista
--   📊 **Analytics & Reporting** - Sales tracking and insights
+- 🏪 **Multi-tenant Architecture** - Support multiple coffee shops
+- 🛒 **Advanced Product Options** - Size, Sugar, Ice, Toppings customization
+- 📱 **QR Code Ordering** - Guest ordering via QR codes
+- 🧑‍🍳 **Kitchen Display System** - Real-time order management
+- 💳 **Payment Integration** - KHQR (Cambodian QR Payment) support
+- 👥 **Role-based Access** - Super Admin, Shop Admin, Staff, Barista
+- 📊 **Analytics & Reporting** - Sales tracking and insights
 
 ## Prerequisites
 
--   PHP >= 8.1
--   Composer
--   MySQL >= 5.7 or MariaDB
--   Node.js & NPM (for Laravel Mix if needed)
+- PHP >= 8.1
+- Composer
+- MySQL >= 5.7 or MariaDB
+- Node.js & NPM (for Laravel Mix if needed)
 
 ## Installation
 
@@ -45,7 +45,7 @@ cp .env.example .env
 Configure your `.env` file with your database credentials:
 
 ```env
-APP_NAME="Coffee POS SaaS"
+APP_NAME="Kafe Srok"
 APP_ENV=local
 APP_KEY=
 APP_DEBUG=true
@@ -95,11 +95,11 @@ php artisan db:seed
 
 This will create:
 
--   Super Admin user (credentials from `.env`)
--   Sample shop "Lucky Cafe"
--   Sample categories and products
--   Sample staff users
--   Sample tables
+- Super Admin user (credentials from `.env`)
+- Sample shop "Lucky Cafe"
+- Sample categories and products
+- Sample staff users
+- Sample tables
 
 ### 6. Start the Development Server
 
@@ -113,42 +113,42 @@ The API will be available at `http://localhost:8000`
 
 ### Super Admin
 
--   Email: `admin@example.com` (or from `.env`)
--   Password: `password` (or from `.env`)
+- Email: `admin@example.com` (or from `.env`)
+- Password: `password` (or from `.env`)
 
 ### Shop Terminal
 
--   Shop Slug: `lucky-cafe`
--   Password: `123456`
+- Shop Slug: `lucky-cafe`
+- Password: `123456`
 
 ### Staff Users
 
--   Cashier: `cashier@luckycafe.com` / `password`
--   Barista: `barista@luckycafe.com` / `password`
+- Cashier: `cashier@luckycafe.com` / `password`
+- Barista: `barista@luckycafe.com` / `password`
 
 ## API Routes
 
 ### Guest Routes (No Auth)
 
--   `POST /api/guest/scan/{qrToken}` - Scan table QR code
--   `GET /api/guest/menu/{shopSlug}` - Get shop menu
--   `POST /api/guest/cart/add` - Add item to cart
--   `POST /api/guest/checkout` - Create order
+- `POST /api/guest/scan/{qrToken}` - Scan table QR code
+- `GET /api/guest/menu/{shopSlug}` - Get shop menu
+- `POST /api/guest/cart/add` - Add item to cart
+- `POST /api/guest/checkout` - Create order
 
 ### Staff Routes (Auth Required)
 
--   `POST /api/staff/auth` - Staff login
--   `GET /api/staff/orders` - Get orders
--   `POST /api/staff/orders` - Create POS order
--   `GET /api/staff/kitchen/{shopSlug}/orders` - Get kitchen orders
--   `POST /api/staff/kitchen/orders/{id}/status` - Update order status
+- `POST /api/staff/auth` - Staff login
+- `GET /api/staff/orders` - Get orders
+- `POST /api/staff/orders` - Create POS order
+- `GET /api/staff/kitchen/{shopSlug}/orders` - Get kitchen orders
+- `POST /api/staff/kitchen/orders/{id}/status` - Update order status
 
 ### Admin Routes
 
--   `GET /api/staff/admin/{shopSlug}/menu/products` - List products
--   `POST /api/staff/admin/{shopSlug}/menu/products` - Create product
--   `PUT /api/staff/admin/{shopSlug}/menu/products/{id}` - Update product
--   `DELETE /api/staff/admin/{shopSlug}/menu/products/{id}` - Delete product
+- `GET /api/staff/admin/{shopSlug}/menu/products` - List products
+- `POST /api/staff/admin/{shopSlug}/menu/products` - Create product
+- `PUT /api/staff/admin/{shopSlug}/menu/products/{id}` - Update product
+- `DELETE /api/staff/admin/{shopSlug}/menu/products/{id}` - Delete product
 
 See `routes/api.php` for complete route list.
 
@@ -292,16 +292,16 @@ If still issues, verify frontend URL matches:
 
 ### Key Tables
 
--   `shops` - Coffee shop tenants
--   `users` - Super admins and staff
--   `products` - Menu items
--   `product_variants` - Product options (Size, Sugar, etc.)
--   `orders` - Customer orders
--   `order_items` - Items in orders
--   `order_item_options` - Selected product options
--   `cart_items` - Guest cart
--   `shop_tables` - QR code tables
--   `table_sessions` - Active guest sessions
+- `shops` - Coffee shop tenants
+- `users` - Super admins and staff
+- `products` - Menu items
+- `product_variants` - Product options (Size, Sugar, etc.)
+- `orders` - Customer orders
+- `order_items` - Items in orders
+- `order_item_options` - Selected product options
+- `cart_items` - Guest cart
+- `shop_tables` - QR code tables
+- `table_sessions` - Active guest sessions
 
 ## Development
 
@@ -348,8 +348,8 @@ php artisan view:cache
 
 For issues and questions:
 
--   GitHub Issues: https://github.com/Johnrak11/Coffee-POS-Sass/issues
--   Email: support@example.com
+- GitHub Issues: https://github.com/Johnrak11/Coffee-POS-Sass/issues
+- Email: support@example.com
 
 ## License
 

@@ -22,6 +22,12 @@
     "warning": "ការព្រមាន",
     "info": "ព័ត៌មាន",
     "selectLanguage": "ជ្រើសរើសភាសា",
+    "showing": "បង្ហាញ",
+    "page": "ទំព័រ",
+    "of": "នៃ",
+    "previous": "មុន",
+    "next": "បន្ទាប់",
+    "allStatus": "ស្ថានភាពទាំងអស់",
     "paymentSuccessful": "ការទូទាត់ជោគជ័យ!",
     "transactionCompleted": "ប្រតិបត្តិការបានបញ្ចប់ដោយជោគជ័យ",
     "exact": "ជាក់លាក់"
@@ -84,13 +90,16 @@
   },
   "transaction": {
     "transactionHistory": "ប្រវត្តិប្រតិបត្តិការ",
+    "viewAllTransactions": "មើលនិងតាមដានប្រតិបត្តិការទាំងអស់",
     "method": "វិធីសាស្ត្រ",
     "amount": "ចំនួនទឹកប្រាក់",
     "status": "ស្ថានភាព",
     "date": "កាលបរិច្ឆេទ",
     "verified": "បានផ្ទៀងផ្ទាត់",
     "showInfo": "បង្ហាញព័ត៌មាន",
-    "hideInfo": "លាក់ព័ត៌មាន"
+    "hideInfo": "លាក់ព័ត៌មាន",
+    "fullString": "ខ្សែអក្សរពេញលេញ",
+    "failed": "បរាជ័យ"
   },
   "settings": {
     "settings": "ការកំណត់",

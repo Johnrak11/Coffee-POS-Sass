@@ -1,0 +1,24 @@
+kafesrok.johnrak.online {
+    import tls_cloudflare
+
+    # Optional security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+    }
+
+    # Backend API Routes
+    handle /api/* {
+        reverse_proxy localhost:6002
+    }
+
+    # Laravel Sanctum Routes
+    handle /sanctum/* {
+        reverse_proxy localhost:6002
+    }
+
+    # Frontend (Catch-all)
+    handle /* {
+        reverse_proxy localhost:6001
+    }
+}
