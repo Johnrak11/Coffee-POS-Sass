@@ -4,9 +4,10 @@ set -e
 # Load environment variables
 if [ -f backend/.env ]; then
   # Use the backend .env if it exists
-  export $(grep -v '^#' backend/.env | xargs)
+  # Filter out comments (including indented) and empty lines
+  export $(grep -v '^[[:space:]]*#' backend/.env | grep -v '^[[:space:]]*$' | xargs)
 elif [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+  export $(grep -v '^[[:space:]]*#' .env | grep -v '^[[:space:]]*$' | xargs)
 fi
 
 echo "Deploying KafeSrok..."
