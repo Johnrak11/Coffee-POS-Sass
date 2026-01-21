@@ -12,6 +12,7 @@ services:
       - "6001:80"
     networks:
       - coffee-net
+      - web_gateway
 
   backend:
     build:
@@ -40,6 +41,7 @@ services:
       - mariadb
     networks:
       - coffee-net
+      - web_gateway
 
   mariadb:
     image: mariadb:10-jammy
@@ -60,6 +62,8 @@ services:
 networks:
   coffee-net:
     driver: bridge
+  web_gateway:
+    external: true
 
 volumes:
   coffee-mysql-data:
