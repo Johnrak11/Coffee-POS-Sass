@@ -1,0 +1,20 @@
+name: Deploy KafeSrok
+
+on:
+  push:
+    branches: ["prod"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/projects/Coffee-POS-Sass
+             # Run the deployment script directly with sh to avoid permission issues
+            sh deploy.sh

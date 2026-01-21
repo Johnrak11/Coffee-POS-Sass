@@ -15,7 +15,7 @@ A modern Vue.js 3 frontend for Coffee Shop Point of Sale system with guest order
 
 ## Prerequisites
 
-- Node.js >= 18.x
+- Node.js >= 22.x
 - npm >= 9.x or yarn >= 1.22.x
 
 ## Installation
@@ -31,8 +31,6 @@ cd Coffee-POS-Sass/frontend
 
 ```bash
 npm install
-# or
-yarn install
 ```
 
 ### 3. Environment Configuration
@@ -40,24 +38,42 @@ yarn install
 Create a `.env` file in the `frontend` directory:
 
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:6002/api
 ```
 
-For production:
-
-```env
-VITE_API_URL=https://your-domain.com/api
-```
+For production (Docker):
+The `docker-compose.yml` handles port mapping, but you must ensure your client `.env` points to the correct backend URL.
 
 ### 4. Start Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
 The application will be available at `http://localhost:3000`
+
+## Docker Deployment (Production)
+
+The easiest way to run the full stack is using the provided `deploy.sh` script in the root directory.
+
+### Manual Docker Build
+
+```bash
+# Build the image
+docker build -t kafesrok-frontend .
+
+# Run container (Port 6001)
+docker run -d -p 6001:80 --name kafesrok-frontend kafesrok-frontend
+```
+
+### via Docker Compose (Root)
+
+```bash
+cd ..
+./deploy.sh
+```
+
+This will start frontend on port **6001**.
 
 ## Project Structure
 

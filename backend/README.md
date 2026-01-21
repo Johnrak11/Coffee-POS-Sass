@@ -14,10 +14,9 @@ A Laravel-based API backend for a modern Coffee Shop Point of Sale system with m
 
 ## Prerequisites
 
-- PHP >= 8.1
+- PHP >= 8.4
+- Docker & Docker Compose
 - Composer
-- MySQL >= 5.7 or MariaDB
-- Node.js & NPM (for Laravel Mix if needed)
 
 ## Installation
 
@@ -28,13 +27,7 @@ git clone https://github.com/Johnrak11/Coffee-POS-Sass.git
 cd Coffee-POS-Sass/backend
 ```
 
-### 2. Install Dependencies
-
-```bash
-composer install
-```
-
-### 3. Environment Configuration
+### 2. Environment Configuration
 
 Copy the example environment file:
 
@@ -42,72 +35,65 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Configure your `.env` file with your database credentials:
+**Crucial Production Settings (Docker):**
+Ensure these are set in `docker-compose.yml` or your `.env`:
 
 ```env
-APP_NAME="Kafe Srok"
-APP_ENV=local
-APP_KEY=
-APP_DEBUG=true
-APP_URL=http://localhost:8000
+APP_NAME=KafeSrok
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://kafesrok.johnrak.online
 
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
+DB_HOST=mariadb
 DB_PORT=3306
-DB_DATABASE=coffee_pos_saas
-DB_USERNAME=root
-DB_PASSWORD=
+DB_DATABASE=kafesrok_production
+DB_USERNAME=laravel
+DB_PASSWORD=secret
 
-# Super Admin Credentials (for seeder)
-SUPER_ADMIN_NAME="Super Admin"
-SUPER_ADMIN_EMAIL=admin@example.com
-SUPER_ADMIN_PASSWORD=password
-
-# KHQR Payment (Optional)
-BAKONG_TOKEN=your_bakong_token_here
+SANCTUM_STATEFUL_DOMAINS=kafesrok.johnrak.online
+SESSION_DOMAIN=.johnrak.online
 ```
 
-### 4. Generate Application Key
+### 3. Docker Deployment (Recommended)
+
+Navigate to the project root and run the deployment script:
 
 ```bash
-php artisan key:generate
+./deploy.sh
 ```
 
-### 5. Database Setup
+This script will:
 
-Create your database:
+1. Build `kafesrok-backend` (PHP 8.4 + Nginx) and `kafesrok-frontend`.
+2. Start MariaDB in a container named `kafesrok-db`.
+3. Auto-run migrations and clear caches.
 
-```sql
-CREATE DATABASE coffee_pos_saas CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+### 4. Manual Commands (Docker Exec)
 
-Run migrations:
+If you need to run commands manually inside the container:
+
+**Run Migrations:**
 
 ```bash
-php artisan migrate
+docker exec kafesrok-backend php artisan migrate --force
 ```
 
-Seed the database with sample data:
+**Seed Database (Force required in production):**
 
 ```bash
-php artisan db:seed
+# General Seeding
+docker exec kafesrok-backend php artisan db:seed --force
+
+# Specific Class (Use single quotes to avoid shell escaping issues)
+docker exec kafesrok-backend php artisan db:seed --class='Database\Seeders\ShopSeeder' --force
 ```
 
-This will create:
-
-- Super Admin user (credentials from `.env`)
-- Sample shop "Lucky Cafe"
-- Sample categories and products
-- Sample staff users
-- Sample tables
-
-### 6. Start the Development Server
+**Clear Cache:**
 
 ```bash
-php artisan serve
+docker exec kafesrok-backend php artisan optimize:clear
 ```
-
-The API will be available at `http://localhost:8000`
 
 ## Default Credentials
 
