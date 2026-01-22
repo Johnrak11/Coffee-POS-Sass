@@ -84,6 +84,20 @@ onMounted(async () => {
 
   // Load cart
   await cartStore.fetchCart();
+
+  // START POLLING for multi-user updates
+  // Refresh cart every 4 seconds to see friends' orders
+  const pollInterval = setInterval(() => {
+    if (sessionStore.isActive) {
+      cartStore.fetchCart();
+    }
+  }, 4000); // 4s interval
+
+  // Cleanup
+  import { onUnmounted } from "vue";
+  onUnmounted(() => {
+    clearInterval(pollInterval);
+  });
 });
 
 function handleProductClick(product: Product) {
