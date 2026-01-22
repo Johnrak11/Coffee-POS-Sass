@@ -125,13 +125,3 @@ Route::prefix('staff')->middleware([\App\Http\Middleware\CheckSubscription::clas
         });
     });
 });
-
-// Debug Route
-Route::get('debug/headers', function (Illuminate\Http\Request $request) {
-    return response()->json([
-        'ip' => $request->ip(),
-        'ips' => $request->ips(),
-        'headers' => $request->header(),
-        'server' => $request->server(),
-    ]);
-});
