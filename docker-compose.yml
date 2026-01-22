@@ -26,6 +26,8 @@ services:
       - ./backend/storage:/var/www/html/storage
     ports:
       - "6002:80"
+    env_file:
+      - ./backend/.env
     environment:
       APP_NAME: KafeSrok
       APP_DEBUG: "false"
