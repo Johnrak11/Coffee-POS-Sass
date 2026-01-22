@@ -21,7 +21,7 @@ class ShopSeeder extends Seeder
             'bakong_wallet_id' => 'lucky_cafe@bakong',
             'subscription_status' => 'active',
             'password' => Hash::make('123456'), // Default shop password
-            'subscription_expires_at' => now()->addYears(100), // Lifetime free for demo
+            'subscription_expires_at' => now()->addYears(10), // Long validity (max 2038 for TIMESTAMP)
         ]);
 
         // Create staff users

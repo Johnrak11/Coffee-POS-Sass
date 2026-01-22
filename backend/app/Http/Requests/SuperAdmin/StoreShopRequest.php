@@ -17,12 +17,25 @@ class StoreShopRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required',
-            'slug' => 'required|unique:shops,slug',
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:50|unique:shops,slug',
             'password' => 'required|min:4',
             'plan' => 'required',
             'owner_email' => 'required|email|unique:users,email',
-            'owner_password' => 'required|min:6'
+            'owner_password' => 'required|min:6',
+
+            // Optional fields for creation
+            'bakong_account_id' => 'nullable|string|max:255',
+            'merchant_name' => 'nullable|string|max:255',
+            'merchant_city' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'logo_url' => 'nullable|url',
+            'receipt_footer' => 'nullable|string|max:255',
+            'primary_color' => 'nullable|string|max:7',
+            'currency_symbol' => 'nullable|string|max:5',
+            'bakong_wallet_id' => 'nullable|string|max:255',
+            'theme_mode' => 'nullable|in:light,dark',
         ];
     }
 }

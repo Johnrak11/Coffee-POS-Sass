@@ -63,7 +63,19 @@ class ShopManagementService
             'subscription_status' => 'active',
             'subscription_expires_at' => now()->addDays(30),
             'owner_name' => 'Owner',
-            'theme_mode' => 'dark'
+            'theme_mode' => $data['theme_mode'] ?? 'dark',
+
+            // Fill optional fields
+            'bakong_account_id' => $data['bakong_account_id'] ?? null,
+            'merchant_name' => $data['merchant_name'] ?? null,
+            'merchant_city' => $data['merchant_city'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'address' => $data['address'] ?? null,
+            'logo_url' => $data['logo_url'] ?? null,
+            'receipt_footer' => $data['receipt_footer'] ?? null,
+            'primary_color' => $data['primary_color'] ?? null,
+            'currency_symbol' => $data['currency_symbol'] ?? '$',
+            'bakong_wallet_id' => $data['bakong_wallet_id'] ?? null,
         ]);
 
         $user = User::create([
@@ -88,10 +100,34 @@ class ShopManagementService
 
         $shop->update([
             'name' => $data['name'],
+            'subscription_plan' => $data['plan'] ?? $shop->subscription_plan,
             'bakong_account_id' => $data['bakong_account_id'] ?? $shop->bakong_account_id,
             'merchant_name' => $data['merchant_name'] ?? $shop->merchant_name,
-            'subscription_plan' => $data['plan'] ?? $shop->subscription_plan
+            'merchant_city' => $data['merchant_city'] ?? $shop->merchant_city,
+            'phone' => $data['phone'] ?? $shop->phone,
+            'address' => $data['address'] ?? $shop->address,
+            'logo_url' => $data['logo_url'] ?? $shop->logo_url,
+            'receipt_footer' => $data['receipt_footer'] ?? $shop->receipt_footer,
+            'primary_color' => $data['primary_color'] ?? $shop->primary_color,
+            'currency_symbol' => $data['currency_symbol'] ?? $shop->currency_symbol,
+            'bakong_wallet_id' => $data['bakong_wallet_id'] ?? $shop->bakong_wallet_id,
+            'theme_mode' => $data['theme_mode'] ?? $shop->theme_mode,
         ]);
+
+        // Manage Owner Update if requested
+        if (!empty($data['owner_email']) || !empty($data['owner_password'])) {
+            $owner = $shop->users()->where('role', 'owner')->first();
+            if ($owner) {
+                if (!empty($data['owner_email'])) {
+                    // Check uniqueness excluding current user if needed, but for now simple update
+                    $owner->email = $data['owner_email'];
+                }
+                if (!empty($data['owner_password'])) {
+                    $owner->password = Hash::make($data['owner_password']);
+                }
+                $owner->save();
+            }
+        }
 
         return $shop;
     }
