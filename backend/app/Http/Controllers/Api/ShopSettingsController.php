@@ -44,6 +44,7 @@ class ShopSettingsController extends Controller
 
     public function getIp(Request $request)
     {
-        return response()->json(['ip' => $request->ip()]);
+        $ip = $request->server('HTTP_CF_CONNECTING_IP') ?? $request->ip();
+        return response()->json(['ip' => $ip]);
     }
 }
