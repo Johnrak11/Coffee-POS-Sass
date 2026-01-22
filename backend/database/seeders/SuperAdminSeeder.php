@@ -10,13 +10,12 @@ class SuperAdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $email = env('JOHNRAK_ADMIN_EMAIL');
-        $password = env('JOHNRAK_ADMIN_PASSWORD');
-        $name = env('JOHNRAK_ADMIN_NAME', 'Super Admin');
+        $email = env('SUPER_ADMIN_EMAIL', 'admin@example.com');
+        $password = env('SUPER_ADMIN_PASSWORD', 'password');
+        $name = 'Super Admin';
 
-        if (!$email || !$password) {
-            $this->command->error('JOHNRAK_ADMIN_EMAIL or JOHNRAK_ADMIN_PASSWORD is not set in .env');
-            return;
+        if (env('SUPER_ADMIN_EMAIL') === null || env('SUPER_ADMIN_PASSWORD') === null) {
+            $this->command->warn('⚠️  SUPER_ADMIN_EMAIL or SUPER_ADMIN_PASSWORD not set. Using defaults: admin@example.com / password');
         }
 
         // Ensure a shop exists to attach the user to (Required by DB constraint)
