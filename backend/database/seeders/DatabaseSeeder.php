@@ -20,8 +20,6 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             OptionSetSeeder::class,
             SuperAdminSeeder::class,
-            // PromoteSuperAdminSeeder::class,
-
         ]);
     }
 }

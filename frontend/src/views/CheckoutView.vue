@@ -174,6 +174,47 @@ function closeKhqrModal() {
   if (pollInterval) clearInterval(pollInterval);
 }
 
+async function shareQrCode() {
+  // Find the canvas element (qrcode.vue renders a canvas)
+  const canvas = document.querySelector("#khqr-canvas") as HTMLCanvasElement;
+  if (!canvas) {
+    toast.error("QR Code not ready");
+    return;
+  }
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+
+    const file = new File([blob], "khqr-payment.png", { type: "image/png" });
+    const shareData = {
+      files: [file],
+      title: "Pay with KHQR",
+      text: "Scan this QR code to pay",
+    };
+
+    if (navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          console.error("Share failed:", err);
+          fallbackDownload(blob);
+        }
+      }
+    } else {
+      fallbackDownload(blob);
+    }
+  });
+}
+
+function fallbackDownload(blob: Blob) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "khqr-payment.png";
+  link.click();
+  toast.success("QR Code saved to gallery");
+}
+
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval);
 });
@@ -341,10 +382,36 @@ onUnmounted(() => {
 
           <div
             v-else-if="khqrString"
-            class="bg-white p-2 rounded-xl shadow-inner border border-gray-100 mb-6"
+            class="bg-white p-2 rounded-xl shadow-inner border border-gray-100 mb-6 relative"
           >
-            <QrcodeVue :value="khqrString" :size="240" level="H" />
+            <QrcodeVue
+              id="khqr-canvas"
+              :value="khqrString"
+              :size="240"
+              level="H"
+            />
           </div>
+
+          <!-- Share / Pay Button -->
+          <button
+            @click="shareQrCode"
+            class="mb-6 flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-100 transition-colors"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+              />
+            </svg>
+            Share / Pay with App
+          </button>
 
           <div class="text-center space-y-1 mb-6">
             <p

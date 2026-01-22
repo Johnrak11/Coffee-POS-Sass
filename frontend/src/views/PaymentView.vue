@@ -92,6 +92,37 @@ async function mockSuccess() {
 function formatPrice(price: number) {
   return Number(price).toFixed(2);
 }
+
+async function shareQrCode() {
+  const canvas = document.querySelector(
+    "#khqr-canvas-payment",
+  ) as HTMLCanvasElement;
+  if (!canvas) return;
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+    const file = new File([blob], "khqr-payment.png", { type: "image/png" });
+    const shareData = { files: [file], title: "Pay with KHQR" };
+
+    if (navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err: any) {
+        if (err.name !== "AbortError") fallbackDownload(blob);
+      }
+    } else {
+      fallbackDownload(blob);
+    }
+  });
+}
+
+function fallbackDownload(blob: Blob) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "khqr-payment.png";
+  link.click();
+  toast.success("QR Code saved");
+}
 </script>
 
 <template>
@@ -206,6 +237,7 @@ function formatPrice(price: number) {
             </div>
             <QrcodeVue
               v-else-if="order?.khqr_string"
+              id="khqr-canvas-payment"
               :value="order.khqr_string"
               :size="200"
               level="H"
@@ -215,6 +247,29 @@ function formatPrice(price: number) {
               QR unavailable
             </div>
           </div>
+        </div>
+
+        <!-- Share Button -->
+        <div class="mb-4 text-center">
+          <button
+            @click="shareQrCode"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+              />
+            </svg>
+            Open in Bank App
+          </button>
         </div>
       </div>
 
