@@ -16,5 +16,10 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ~/projects/Coffee-POS-Sass
-             # Run the deployment script directly with sh to avoid permission issues
-            sh deploy.sh
+            git pull origin prod
+            docker compose down
+            docker compose up -d --build
+            sleep 5
+            docker exec kafesrok-backend php artisan optimize:clear
+            docker exec kafesrok-backend php artisan migrate --force
+            docker image prune -f
