@@ -7,6 +7,7 @@ use App\Models\Shop;
 use App\Models\User;
 use App\Models\ShopTable;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class ShopSeeder extends Seeder
 {
@@ -19,6 +20,8 @@ class ShopSeeder extends Seeder
             'owner_name' => 'John Doe',
             'bakong_wallet_id' => 'lucky_cafe@bakong',
             'subscription_status' => 'active',
+            'password' => Hash::make('123456'), // Default shop password
+            'subscription_expires_at' => now()->addYears(100), // Lifetime free for demo
         ]);
 
         // Create staff users

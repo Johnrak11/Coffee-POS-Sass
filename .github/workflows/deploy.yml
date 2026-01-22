@@ -17,9 +17,4 @@ jobs:
           script: |
             cd ~/projects/Coffee-POS-Sass
             git pull origin prod
-            docker compose down
-            docker compose up -d --build
-            sleep 5
-            docker exec kafesrok-backend php artisan optimize:clear
-            docker exec kafesrok-backend php artisan migrate --force
-            docker image prune -f
+            sh deploy.sh
