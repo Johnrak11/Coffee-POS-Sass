@@ -102,21 +102,17 @@ onMounted(async () => {
 });
 
 async function uploadToCloudinary(file: File) {
-  // Fix for IDE error regarding import.meta
-  // const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const cloudName = "demo"; // Temporary fallback
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
   if (!cloudName) throw new Error("Cloudinary not configured");
 
   const formData = new FormData();
   formData.append("file", file);
-  /*
+
   formData.append(
     "upload_preset",
     import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "coffee-pos-unsigned",
   );
-  */
-  formData.append("upload_preset", "coffee-pos-unsigned");
   formData.append("folder", "coffee-pos/products");
 
   const response = await fetch(
