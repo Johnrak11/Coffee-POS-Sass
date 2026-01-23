@@ -49,7 +49,7 @@ export const useCartStore = defineStore("cart", () => {
       (i) => i.product_id === product.id,
     );
 
-    if (existingItemIndex > -1) {
+    if (existingItemIndex > -1 && items.value[existingItemIndex]) {
       items.value[existingItemIndex].quantity += quantity;
     } else {
       // Create a temporary item structure matching CartItem interface
