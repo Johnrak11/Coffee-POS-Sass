@@ -6,9 +6,12 @@ export const useUIStore = defineStore("ui", () => {
   const { locale } = useI18n();
 
   // Theme management
+  // Theme management
+  const storedTheme = localStorage.getItem("darkMode");
   const isDarkMode = ref<boolean>(
-    localStorage.getItem("darkMode") === "true" ||
-      window.matchMedia("(prefers-color-scheme: dark)").matches,
+    storedTheme !== null
+      ? storedTheme === "true"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches,
   );
 
   // Language management (synced with i18n)

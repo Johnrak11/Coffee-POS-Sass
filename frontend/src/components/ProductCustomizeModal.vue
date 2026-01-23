@@ -40,24 +40,49 @@ const totalPrice = computed(() => {
 });
 
 // Initialize default selections (first option of each group)
+// Initialize default selections and handle scroll lock
 watch(
-  () => props.product,
-  (newProduct) => {
-    selections.value = {};
-    quantity.value = 1;
-    if (newProduct?.variants) {
-      const groups = variantGroups.value;
-      Object.keys(groups).forEach((key) => {
-        const group = groups[key];
-        // Default to first option
-        // In a real app, maybe check for 'is_default' flag
-        if (group && group.length > 0) {
-          selections.value[key] = group[0];
-        }
-      });
+  () => props.show,
+  (isOpen) => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      // Initialize defaults when opening
+      if (props.product) {
+        initializeDefaults(props.product);
+      }
+    } else {
+      document.body.style.overflow = "";
     }
   },
   { immediate: true },
+);
+
+// Handle cleanup if component is unmounted while open
+import { onUnmounted } from "vue";
+onUnmounted(() => {
+  document.body.style.overflow = "";
+});
+
+function initializeDefaults(newProduct: any) {
+  selections.value = {};
+  quantity.value = 1;
+  if (newProduct?.variants) {
+    const groups = variantGroups.value;
+    Object.keys(groups).forEach((key) => {
+      const group = groups[key];
+      if (group && group.length > 0) {
+        selections.value[key] = group[0];
+      }
+    });
+  }
+}
+
+// Watch product changes in case it changes while open (edge case)
+watch(
+  () => props.product,
+  (newVal) => {
+    if (props.show) initializeDefaults(newVal);
+  },
 );
 
 function addToCart() {

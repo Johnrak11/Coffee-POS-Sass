@@ -14,41 +14,78 @@ export const useCartStore = defineStore("cart", () => {
 
   const isEmpty = computed(() => items.value.length === 0);
 
-  async function fetchCart() {
+  async function fetchCart(skipLoading = false) {
     if (!sessionStore.sessionToken) return;
 
-    loading.value = true;
+    if (!skipLoading) loading.value = true;
     try {
-      const response = await guestApi.getCart(sessionStore.sessionToken);
+      const response = await guestApi.getCart(sessionStore.sessionToken, {
+        skipLoading,
+      });
       items.value = response.data.items || [];
       total.value = response.data.total || 0;
       itemCount.value = response.data.item_count || 0;
     } catch (error) {
       console.error("Failed to fetch cart:", error);
     } finally {
-      loading.value = false;
+      if (!skipLoading) loading.value = false;
     }
   }
 
   async function addItem(
-    productId: number,
+    product: any, // Changed to receive full product object for optimistic update
     quantity: number = 1,
-    notes: string | null = null
+    notes: string | null = null,
   ) {
     if (!sessionStore.sessionToken) return false;
+
+    // Optimistic Update
+    const previousItems = [...items.value];
+    const previousTotal = total.value;
+    const previousCount = itemCount.value;
+
+    // Simulate adding to local state immediately
+    const existingItemIndex = items.value.findIndex(
+      (i) => i.product_id === product.id,
+    );
+
+    if (existingItemIndex > -1) {
+      items.value[existingItemIndex].quantity += quantity;
+    } else {
+      // Create a temporary item structure matching CartItem interface
+      items.value.push({
+        id: -1, // Temporary ID
+        cart_id: -1,
+        product_id: product.id,
+        quantity: quantity,
+        price: product.price, // Assuming price is available on product object
+        notes: notes,
+        product: product, // Store full product for display
+      } as any);
+    }
+
+    // Update counts
+    itemCount.value += quantity;
+    total.value += Number(product.price) * quantity;
 
     try {
       await guestApi.addToCart({
         session_token: sessionStore.sessionToken,
-        product_id: productId,
+        product_id: product.id,
         quantity,
         notes: notes || undefined,
       });
-      await fetchCart();
-      return true;
+      // Re-fetch to ensure data consistency with server (prices, taxes, etc)
+      // Pass 'true' to skip loading indicator since we already showed the result
+      await fetchCart(true);
       return true;
     } catch (error: any) {
-      if (error.response?.status === 404) {
+      // Revert on failure
+      items.value = previousItems;
+      total.value = previousTotal;
+      itemCount.value = previousCount;
+
+      if ((error as any).response?.status === 404) {
         import("vue-sonner").then(({ toast }) => {
           toast.error("Session Expired", {
             description:
@@ -64,23 +101,81 @@ export const useCartStore = defineStore("cart", () => {
   }
 
   async function updateQuantity(cartItemId: number, quantity: number) {
+    if (!sessionStore.sessionToken) return false;
+
+    // Optimistic Update
+    const previousItems = [...items.value];
+    const previousTotal = total.value;
+    const previousCount = itemCount.value;
+
+    const itemIndex = items.value.findIndex((i) => i.id === cartItemId);
+    const item = items.value[itemIndex];
+
+    if (itemIndex > -1 && item) {
+      const diff = quantity - item.quantity;
+      // Check if product exists before accessing price
+      const price = item.product ? Number(item.product.price) : 0;
+
+      item.quantity = quantity;
+      total.value += price * diff;
+      itemCount.value += diff;
+    }
+
     try {
       await guestApi.updateCartItem(cartItemId, quantity);
-      await fetchCart();
+      // Re-fetch to ensure consistency (especially if backend has logic)
+      // await fetchCart(true); // Can be skipped for pure speed if trusted, but safer to re-fetch occasionally?
+      // Actually for quantity, backend recalc might be safer. Let's re-fetch silently.
+      await fetchCart(true);
       return true;
     } catch (error) {
+      // Revert
+      items.value = previousItems;
+      total.value = previousTotal;
+      itemCount.value = previousCount;
       console.error("Failed to update quantity:", error);
       return false;
     }
   }
 
   async function removeItem(cartItemId: number) {
+    if (!sessionStore.sessionToken) return false;
+
+    // Optimistic Update
+    const previousItems = [...items.value];
+    const previousTotal = total.value;
+    const previousCount = itemCount.value;
+
+    const itemIndex = items.value.findIndex((i) => i.id === cartItemId);
+    const item = items.value[itemIndex];
+
+    if (itemIndex > -1 && item) {
+      // Check if product exists before accessing price
+      const price = item.product ? Number(item.product.price) : 0;
+      total.value -= price * item.quantity;
+      itemCount.value -= item.quantity;
+      items.value.splice(itemIndex, 1);
+    }
+
     try {
       await guestApi.removeCartItem(cartItemId);
-      await fetchCart();
+      // Re-fetch to ensure consistency
+      await fetchCart(true);
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      // Revert
+      items.value = previousItems;
+      total.value = previousTotal;
+      itemCount.value = previousCount;
+
       console.error("Failed to remove item:", error);
+      if ((error as any).response?.status === 404) {
+        import("vue-sonner").then(({ toast }) => {
+          toast.error("Session Expired", {
+            description: "Please scan QR code again.",
+          });
+        });
+      }
       return false;
     }
   }

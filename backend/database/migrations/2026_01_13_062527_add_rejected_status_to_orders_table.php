@@ -11,8 +11,12 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        // MariaDB syntax to update ENUM definition
-        DB::statement("ALTER TABLE orders MODIFY COLUMN payment_status ENUM('pending', 'paid', 'failed', 'rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending'");
+        // Safe update for enum
+        try {
+            DB::statement("ALTER TABLE orders MODIFY COLUMN payment_status ENUM('pending', 'paid', 'failed', 'rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending'");
+        } catch (\Exception $e) {
+            // Ignore if already updated or if table locked
+        }
     }
 
     /**

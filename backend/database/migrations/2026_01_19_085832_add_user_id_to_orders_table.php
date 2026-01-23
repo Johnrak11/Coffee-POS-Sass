@@ -4,16 +4,17 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            // Nullable because orders can be created by guests too (via QR code)
-            $table->foreignId('user_id')->nullable()->after('shop_id')->constrained('users')->nullOnDelete();
+            if (!Schema::hasColumn('orders', 'user_id')) {
+                // Nullable because orders can be created by guests too (via QR code)
+                $table->foreignId('user_id')->nullable()->after('shop_id')->constrained('users')->nullOnDelete();
+            }
         });
     }
 

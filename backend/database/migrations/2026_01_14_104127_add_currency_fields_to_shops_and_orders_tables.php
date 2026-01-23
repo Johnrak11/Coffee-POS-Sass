@@ -15,9 +15,11 @@ return new class extends Migration {
         });
 
         Schema::table('orders', function (Blueprint $table) {
-            $table->string('payment_currency')->default('USD')->after('payment_method'); // USD or KHR
-            $table->decimal('exchange_rate_snapshot', 10, 2)->nullable()->after('payment_currency');
-            $table->decimal('received_amount', 12, 2)->nullable()->after('total_amount'); // Amount in payment_currency
+            if (!Schema::hasColumn('orders', 'payment_currency')) {
+                $table->string('payment_currency')->default('USD')->after('payment_method'); // USD or KHR
+                $table->decimal('exchange_rate_snapshot', 10, 2)->nullable()->after('payment_currency');
+                $table->decimal('received_amount', 12, 2)->nullable()->after('total_amount'); // Amount in payment_currency
+            }
         });
     }
 

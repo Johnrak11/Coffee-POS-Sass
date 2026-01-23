@@ -66,8 +66,9 @@ export const guestApi = {
    */
   async getCart(
     sessionToken: string,
+    config?: { skipLoading?: boolean },
   ): Promise<AxiosResponse<CartResponse>> {
-    return apiClient.get(`/guest/cart/${sessionToken}`);
+    return apiClient.get(`/guest/cart/${sessionToken}`, config as any);
   },
 
   /**

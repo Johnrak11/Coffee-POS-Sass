@@ -104,6 +104,7 @@
   "settings": {
     "settings": "Settings",
     "shopSettings": "Shop Settings",
+    "appearance": "Appearance",
     "shopName": "Shop Name",
     "shopAddress": "Shop Address",
     "shopPhone": "Shop Phone",

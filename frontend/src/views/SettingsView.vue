@@ -83,21 +83,21 @@ async function fetchSettings() {
     const data = response.data;
 
     // Explicitly map fields to preserve defaults and ensures types
-    form.value.name = data.name;
-    form.value.logo_url = data.logo_url;
-    form.value.address = data.address;
-    form.value.phone = data.phone;
-    form.value.receipt_footer = data.receipt_footer;
+    form.value.name = data.name || "";
+    form.value.logo_url = data.logo_url || "";
+    form.value.address = data.address || "";
+    form.value.phone = data.phone || "";
+    form.value.receipt_footer = data.receipt_footer || "";
     form.value.currency_symbol = data.currency_symbol || "$";
     form.value.exchange_rate = data.exchange_rate || 4100;
     form.value.primary_color = data.primary_color || "#F97316";
-    form.value.bakong_account_id = data.bakong_account_id;
-    form.value.merchant_name = data.merchant_name;
-    form.value.merchant_city = data.merchant_city;
-    form.value.bakong_telegram_chat_id = data.bakong_telegram_chat_id;
+    form.value.bakong_account_id = data.bakong_account_id || "";
+    form.value.merchant_name = data.merchant_name || "";
+    form.value.merchant_city = data.merchant_city || "";
+    form.value.bakong_telegram_chat_id = data.bakong_telegram_chat_id || "";
     form.value.theme_mode = data.theme_mode || "light";
-    form.value.wifi_ssid = data.wifi_ssid;
-    form.value.wifi_password = data.wifi_password;
+    form.value.wifi_ssid = data.wifi_ssid || "";
+    form.value.wifi_password = data.wifi_password || "";
 
     // Trusted Networks
     form.value.trusted_ips = data.trusted_ips || [];
@@ -240,6 +240,126 @@ async function saveSettings() {
                   class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                   placeholder="Street address, city, country"
                 ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Appearance Section -->
+          <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
+            <h3
+              class="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2"
+            >
+              <span class="w-1.5 h-6 bg-purple-500 rounded-full"></span>
+              {{ t("settings.appearance") }}
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Theme Toggle -->
+              <div
+                class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="p-2 bg-white dark:bg-gray-700 rounded-lg shadow-sm"
+                  >
+                    <svg
+                      v-if="uiStore.isDarkMode"
+                      class="w-6 h-6 text-yellow-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                      />
+                    </svg>
+                    <svg
+                      v-else
+                      class="w-6 h-6 text-gray-600 dark:text-gray-300"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9 0 008.354-5.646z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="font-bold text-gray-900 dark:text-white">
+                      {{ t("settings.theme") }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      {{
+                        uiStore.isDarkMode
+                          ? t("settings.darkMode")
+                          : t("settings.lightMode")
+                      }}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  @click="uiStore.toggleTheme()"
+                  class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                  :class="uiStore.isDarkMode ? 'bg-primary-600' : 'bg-gray-200'"
+                >
+                  <span
+                    aria-hidden="true"
+                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                    :class="
+                      uiStore.isDarkMode ? 'translate-x-5' : 'translate-x-0'
+                    "
+                  />
+                </button>
+              </div>
+
+              <!-- Language Toggle -->
+              <div
+                class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="p-2 bg-white dark:bg-gray-700 rounded-lg shadow-sm"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-6 h-6 text-primary-600 dark:text-primary-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="font-bold text-gray-900 dark:text-white">
+                      {{ t("settings.language") }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      {{ uiStore.currentLocale === "en" ? "English" : "ខ្មែរ" }}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  @click="
+                    uiStore.setLocale(
+                      uiStore.currentLocale === 'en' ? 'kh' : 'en',
+                    )
+                  "
+                  class="px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Change
+                </button>
               </div>
             </div>
           </div>

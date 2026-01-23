@@ -12,12 +12,40 @@ const cartStore = useCartStore();
 const sessionStore = useSessionStore();
 const isSubmitting = ref(false);
 
+// Fetch cart on mount to handle page refreshes
+import { onMounted } from "vue";
+onMounted(async () => {
+  if (sessionStore.sessionToken) {
+    await cartStore.fetchCart();
+  }
+});
+
 // KHQR State
 const showKhqrModal = ref(false);
 const khqrString = ref<string | null>(null);
 const khqrMd5 = ref<string | null>(null);
 const khqrLoading = ref(false);
 let pollInterval: any = null;
+
+async function deleteItem(id: number) {
+  const success = await cartStore.removeItem(id);
+  if (success) {
+    toast.success("Item removed");
+  } else {
+    toast.error("Failed to remove item");
+  }
+}
+
+async function updateItemQuantity(item: any, newQty: number) {
+  if (newQty < 1) {
+    // If < 1, confirm delete or just delete? User asked for remove logic separate, possibly fine to delete on 0?
+    // Let's call delete logic if 0.
+    await deleteItem(item.id);
+    return;
+  }
+  // No max limit logic unless product has stock? Assuming unlimited for now.
+  await cartStore.updateQuantity(item.id, newQty);
+}
 
 // Currency Toggle for KHQR (Default USD, but often KHQR is KHR preferred by locals)
 // The generate endpoint accepts currency.
@@ -28,7 +56,8 @@ async function checkout(paymentMethod: "cash" | "khqr") {
   if (!sessionStore.sessionToken) return;
 
   if (paymentMethod === "khqr") {
-    // Start KHQR Flow
+    // Start KHQR Flow without disabling the main button immediately (modal covers it)
+    // or set a different state if needed. But user said "skip loading on top".
     showKhqrModal.value = true;
     await generateKhqr();
     return;
@@ -222,37 +251,60 @@ onUnmounted(() => {
 
 <template>
   <div class="min-h-screen bg-gray-50 p-4 pb-12">
-    <div class="max-w-lg mx-auto">
-      <div class="flex items-center gap-4 mb-8">
-        <button
-          @click="router.back()"
-          class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
-        >
-          <svg
-            class="w-5 h-5 text-gray-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <div class="max-w-lg mx-auto pt-20">
+      <div
+        class="fixed top-0 left-0 right-0 z-40 bg-gray-50/90 backdrop-blur-md p-4"
+      >
+        <div class="max-w-lg mx-auto flex items-center gap-4">
+          <button
+            @click="router.back()"
+            class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center hover:bg-gray-100 transition-colors border border-gray-100"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"
-            ></path>
-          </svg>
-        </button>
-        <h1 class="text-2xl font-bold text-gray-900">Your Order</h1>
+            <svg
+              class="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              ></path>
+            </svg>
+          </button>
+          <h1 class="text-xl font-bold text-gray-900">Your Order</h1>
+        </div>
       </div>
 
       <div v-auto-animate class="space-y-4 mb-8">
         <div
           v-for="item in cartStore.items"
           :key="item.id"
-          class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4"
+          class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 relative group"
         >
+          <button
+            @click="deleteItem(item.id)"
+            class="absolute -top-2 -right-2 bg-white text-red-500 rounded-full p-2 shadow-md border border-gray-100 transition-colors hover:bg-red-50 z-10"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+
           <div
-            class="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden"
+            class="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0"
           >
             <img
               v-if="item.product.image_url"
@@ -263,11 +315,62 @@ onUnmounted(() => {
               item.product.name[0]
             }}</span>
           </div>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-800">{{ item.product.name }}</h3>
-            <p class="text-xs text-gray-400">Qty: {{ item.quantity }}</p>
+
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-gray-800 truncate">
+              {{ item.product.name }}
+            </h3>
+
+            <!-- Quantity Controls -->
+            <div class="flex items-center gap-3 mt-1">
+              <button
+                @click="updateItemQuantity(item, item.quantity - 1)"
+                class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 active:scale-95 transition-all"
+                :disabled="isSubmitting"
+              >
+                <svg
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M20 12H4"
+                  />
+                </svg>
+              </button>
+
+              <span
+                class="text-sm font-bold text-gray-900 min-w-[1.5rem] text-center"
+                >{{ item.quantity }}</span
+              >
+
+              <button
+                @click="updateItemQuantity(item, item.quantity + 1)"
+                class="w-6 h-6 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 hover:bg-primary-100 active:scale-95 transition-all"
+                :disabled="isSubmitting"
+              >
+                <svg
+                  class="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
-          <p class="font-bold text-gray-900">
+
+          <p class="font-bold text-primary-600 whitespace-nowrap">
             ${{ (Number(item.product.price) * item.quantity).toFixed(2) }}
           </p>
         </div>
@@ -392,10 +495,21 @@ onUnmounted(() => {
             />
           </div>
 
-          <!-- Share / Pay Button -->
+          <div class="text-center space-y-1 mb-6">
+            <p
+              class="text-gray-400 text-xs font-bold uppercase tracking-widest"
+            >
+              Total Amount
+            </p>
+            <p class="text-3xl font-black text-gray-900">
+              ${{ Number(cartStore.total).toFixed(2) }}
+            </p>
+          </div>
+
+          <!-- Share / Pay Button (Moved to bottom) -->
           <button
             @click="shareQrCode"
-            class="mb-6 flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-100 transition-colors"
+            class="mb-6 flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-100 transition-colors w-full justify-center"
           >
             <svg
               class="w-5 h-5"
@@ -413,19 +527,27 @@ onUnmounted(() => {
             Share / Pay with App
           </button>
 
-          <div class="text-center space-y-1 mb-6">
-            <p
-              class="text-gray-400 text-xs font-bold uppercase tracking-widest"
+          <div
+            class="flex items-center gap-2 text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full mb-2"
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              Total Amount
-            </p>
-            <p class="text-3xl font-black text-gray-900">
-              ${{ Number(cartStore.total).toFixed(2) }}
-            </p>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            QR code is for one-time use only
           </div>
 
           <div
-            class="flex items-center gap-2 text-xs font-bold text-gray-400 animate-pulse bg-gray-50 px-3 py-1.5 rounded-full"
+            class="flex items-center gap-2 text-xs font-bold text-gray-400 animate-pulse"
           >
             <div class="w-2 h-2 bg-red-500 rounded-full"></div>
             Waiting for payment...

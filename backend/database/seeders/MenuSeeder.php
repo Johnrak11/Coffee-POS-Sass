@@ -26,10 +26,10 @@ class MenuSeeder extends Seeder
         // 1. Create Categories
         $categories = [
             'Coffee' => Category::create(['shop_id' => $shop->id, 'name' => 'Signature Coffee', 'sort_order' => 1]),
-            'Tea'    => Category::create(['shop_id' => $shop->id, 'name' => 'Tea & Milk Tea', 'sort_order' => 2]),
+            'Tea' => Category::create(['shop_id' => $shop->id, 'name' => 'Tea & Milk Tea', 'sort_order' => 2]),
             'Frappe' => Category::create(['shop_id' => $shop->id, 'name' => 'Ice Blended (Frappe)', 'sort_order' => 3]),
-            'Soda'   => Category::create(['shop_id' => $shop->id, 'name' => 'Fizzy Soda', 'sort_order' => 4]),
-            'Cake'   => Category::create(['shop_id' => $shop->id, 'name' => 'Premium Cakes', 'sort_order' => 5]),
+            'Soda' => Category::create(['shop_id' => $shop->id, 'name' => 'Fizzy Soda', 'sort_order' => 4]),
+            'Cake' => Category::create(['shop_id' => $shop->id, 'name' => 'Premium Cakes', 'sort_order' => 5]),
             'Bakery' => Category::create(['shop_id' => $shop->id, 'name' => 'Fresh Bakery', 'sort_order' => 6]),
         ];
 
@@ -40,7 +40,7 @@ class MenuSeeder extends Seeder
                 'category' => 'Coffee',
                 'name' => 'Hot Espresso',
                 'price' => 1.50,
-                'image_url' => 'https://images.unsplash.com/photo-1510591509098-f40962d43898?auto=format&fit=crop&w=800&q=80',
+                'image_url' => 'https:\/\/res.cloudinary.com\/dbp9s9ojl\/image\/upload\/v1769146170\/coffee-pos\/products\/u4fkbajuz2f28nw8rhok.png',
                 'variants' => [
                     ['name' => 'Shots', 'option_name' => 'Single Shot', 'extra_price' => 0.00],
                     ['name' => 'Shots', 'option_name' => 'Double Shot', 'extra_price' => 0.50],
@@ -85,7 +85,7 @@ class MenuSeeder extends Seeder
                 'category' => 'Coffee',
                 'name' => 'Caramel Macchiato',
                 'price' => 3.25,
-                'image_url' => 'https://images.unsplash.com/photo-1485808191679-5f8c7c860695?auto=format&fit=crop&w=800&q=80',
+                'image_url' => 'https:\/\/res.cloudinary.com\/dbp9s9ojl\/image\/upload\/v1769146367\/coffee-pos\/products\/xk9afieoqtydugt5exd9.png',
                 'variants' => [
                     ['name' => 'Size', 'option_name' => 'Regular', 'extra_price' => 0.00],
                     ['name' => 'Size', 'option_name' => 'Large', 'extra_price' => 0.75],
@@ -140,7 +140,7 @@ class MenuSeeder extends Seeder
                 'category' => 'Frappe',
                 'name' => 'Strawberry Smoothie',
                 'price' => 3.25,
-                'image_url' => 'https://images.unsplash.com/photo-1623594830172-5b9678822db6?auto=format&fit=crop&w=800&q=80',
+                'image_url' => 'https:\/\/res.cloudinary.com\/dbp9s9ojl\/image\/upload\/v1769146447\/coffee-pos\/products\/z2t4urjwhqddpqksqcaa.png',
             ],
             [
                 'category' => 'Frappe',
@@ -152,7 +152,7 @@ class MenuSeeder extends Seeder
                 'category' => 'Frappe',
                 'name' => 'Oreo Frappe',
                 'price' => 3.75,
-                'image_url' => 'https://images.unsplash.com/photo-1577805947697-89e18249d76e?auto=format&fit=crop&w=800&q=80',
+                'image_url' => 'https:\/\/res.cloudinary.com\/dbp9s9ojl\/image\/upload\/v1769146534\/coffee-pos\/products\/k0jxf7xvnql2fijfvojc.png',
             ],
 
             // --- SODA ---
@@ -166,7 +166,7 @@ class MenuSeeder extends Seeder
                 'category' => 'Soda',
                 'name' => 'Strawberry Soda',
                 'price' => 2.25,
-                'image_url' => 'https://images.unsplash.com/photo-1625740822008-e45a8a9d169c?auto=format&fit=crop&w=800&q=80',
+                'image_url' => 'https:\/\/res.cloudinary.com\/dbp9s9ojl\/image\/upload\/v1769146625\/coffee-pos\/products\/lwpgayzk39ykvgp3bvid.png',
             ],
 
             // --- CAKE ---

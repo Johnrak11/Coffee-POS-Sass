@@ -41,14 +41,20 @@ class PosOrderController extends Controller
         ]);
 
         try {
+            // Safety Check: Verify User Exists to avoid FK Integrity Error (1452)
+            // This handles cases where a user might be deleted but still has a valid token
+            $userId = Auth::id();
+            if ($userId && !\App\Models\User::where('id', $userId)->exists()) {
+                $userId = null;
+            }
+
             $order = $this->orderService->createPosOrder(
                 $validated['shop_id'],
                 $validated['items'],
                 $validated['payment_method'],
                 $validated['payment_currency'] ?? 'USD',
                 $validated['received_amount'] ?? 0,
-                $validated['received_amount'] ?? 0,
-                Auth::id()
+                $userId
             );
 
             // KHQR Integration: Generate QR immediately if method is KHQR

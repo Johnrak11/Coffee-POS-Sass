@@ -11,9 +11,11 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->string('khqr_md5')->nullable()->unique();
-            $table->text('khqr_string')->nullable();
-            $table->json('payment_metadata')->nullable();
+            if (!Schema::hasColumn('orders', 'khqr_md5')) {
+                $table->string('khqr_md5')->nullable()->unique();
+                $table->text('khqr_string')->nullable();
+                $table->json('payment_metadata')->nullable();
+            }
         });
     }
 

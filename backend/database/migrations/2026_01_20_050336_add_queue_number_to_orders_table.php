@@ -11,7 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->integer('queue_number')->nullable()->after('order_number');
+            if (!Schema::hasColumn('orders', 'queue_number')) {
+                $table->integer('queue_number')->nullable()->after('order_number');
+            }
         });
     }
 
