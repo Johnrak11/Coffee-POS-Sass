@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { guestApi } from "@/api";
@@ -94,7 +94,6 @@ onMounted(async () => {
   }, 4000); // 4s interval
 
   // Cleanup
-  import { onUnmounted } from "vue";
   onUnmounted(() => {
     clearInterval(pollInterval);
   });
