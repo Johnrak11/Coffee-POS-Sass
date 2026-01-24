@@ -96,6 +96,8 @@ function scrollToCategory(categoryId: number) {
 // Scroll Spy with Intersection Observer
 let observer: IntersectionObserver | null = null;
 
+const pollInterval = ref<any>(null);
+
 onMounted(async () => {
   window.addEventListener("scroll", handleScroll, { passive: true });
 
@@ -129,7 +131,7 @@ onMounted(async () => {
       setupScrollSpy();
     }, 500);
   } catch (error) {
-    console.error("Failed to load menu:", error);
+    // console.error("Failed to load menu:", error);
   } finally {
     loading.value = false;
   }
@@ -139,18 +141,17 @@ onMounted(async () => {
 
   // START POLLING for multi-user updates
   // Refresh cart every 4 seconds to see friends' orders
-  const pollInterval = setInterval(() => {
+  pollInterval.value = setInterval(() => {
     if (sessionStore.isActive) {
       cartStore.fetchCart(true);
     }
   }, 4000); // 4s interval
+});
 
-  // Cleanup
-  onUnmounted(() => {
-    window.removeEventListener("scroll", handleScroll);
-    clearInterval(pollInterval);
-    if (observer) observer.disconnect();
-  });
+onUnmounted(() => {
+  window.removeEventListener("scroll", handleScroll);
+  if (pollInterval.value) clearInterval(pollInterval.value);
+  if (observer) observer.disconnect();
 });
 
 function setupScrollSpy() {
@@ -309,7 +310,7 @@ async function addToCart(product: Product) {
           :id="`tab-${category.id}`"
           @click="scrollToCategory(category.id)"
           :class="[
-            'px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all min-w-touch',
+            'px-5 py-3 rounded-xl font-medium whitespace-nowrap transition-all min-w-touch text-base',
             selectedCategory === category.id
               ? 'bg-primary-600 text-white shadow-medium'
               : 'bg-white text-gray-700 hover:bg-gray-100',

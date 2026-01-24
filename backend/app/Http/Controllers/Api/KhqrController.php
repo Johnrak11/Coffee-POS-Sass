@@ -9,10 +9,12 @@ use Illuminate\Http\Request;
 class KhqrController extends Controller
 {
     protected $bakongService;
+    protected $sessionService;
 
-    public function __construct(BakongService $bakongService)
+    public function __construct(BakongService $bakongService, \App\Services\TableSessionService $sessionService)
     {
         $this->bakongService = $bakongService;
+        $this->sessionService = $sessionService;
     }
 
     /**
@@ -22,12 +24,28 @@ class KhqrController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'currency' => 'required|in:USD,KHR'
+            'currency' => 'required|in:USD,KHR',
+            'session_token' => 'required|string',
         ]);
+
+        $session = $this->sessionService->getSession($request->session_token);
+        if (!$session) {
+            return response()->json(['message' => 'Invalid session'], 404);
+        }
+
+        $shop = $session->shopTable->shop;
+        if (!$shop) {
+            return response()->json(['message' => 'Shop not found'], 404);
+        }
 
         $result = $this->bakongService->generateQr(
             $request->amount,
-            $request->currency
+            $request->currency,
+            [
+                'merchant_name' => $shop->merchant_name ?? $shop->name ?? 'Coffee POS',
+                'merchant_city' => $shop->merchant_city ?? 'Phnom Penh',
+                'telegram_chat_id' => $shop->bakong_telegram_chat_id,
+            ]
         );
 
         // Cast to array to be safe
@@ -169,7 +187,8 @@ class KhqrController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to connect to KHQR Service (Port 8000). Please check if the service is running.',
-                'error' => $e->getMessage()
+                'message' => 'Failed to connect to Payment Service. Please try again later.',
+                // 'error' => $e->getMessage() // HIDDEN FOR SECURITY
             ], 500);
         }
 
@@ -187,7 +206,8 @@ class KhqrController extends Controller
         if (!isset($data['qr_string']) || !isset($data['md5'])) {
             return response()->json([
                 'message' => 'Invalid QR Response from Service',
-                'debug' => $result
+                'message' => 'Invalid QR Response from Service',
+                // 'debug' => $result // HIDDEN FOR SECURITY
             ], 500);
         }
 

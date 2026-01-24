@@ -122,11 +122,11 @@ function formatCurrency(amount: number) {
 
     <!-- Modal -->
     <div
-      class="relative bg-app-surface w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-in text-app-text border border-app-border flex flex-col max-h-[90vh]"
+      class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-scale-in text-gray-900 border border-gray-100 flex flex-col max-h-[90vh]"
     >
       <!-- Header -->
       <div
-        class="p-4 border-b border-app-border bg-app-bg/50 flex justify-between items-center"
+        class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center"
       >
         <h2 class="text-xl font-bold">{{ product?.name }}</h2>
         <button
@@ -171,7 +171,7 @@ function formatCurrency(amount: number) {
                   class="peer sr-only"
                 />
                 <div
-                  class="p-3 rounded-xl border border-app-border bg-app-bg peer-checked:border-primary-500 peer-checked:bg-primary-500/10 peer-checked:text-primary-500 transition-all text-center"
+                  class="p-3 rounded-xl border border-gray-200 bg-white peer-checked:border-primary-500 peer-checked:bg-primary-50 peer-checked:text-primary-700 transition-all text-center"
                 >
                   <div class="font-medium">{{ variant.option_name }}</div>
                   <div
@@ -188,7 +188,7 @@ function formatCurrency(amount: number) {
       </div>
 
       <!-- Footer -->
-      <div class="p-4 border-t border-app-border bg-app-bg/50">
+      <div class="p-4 border-t border-gray-100 bg-gray-50">
         <div class="flex items-center justify-between mb-4">
           <div
             class="flex items-center gap-3 bg-app-bg rounded-xl p-1 border border-app-border"
@@ -213,7 +213,7 @@ function formatCurrency(amount: number) {
         </div>
         <button
           @click="addToCart"
-          class="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary-900/20 transition-all transform active:scale-95"
+          class="w-full py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary-900/20 transition-all transform active:scale-95"
         >
           Add to Order
         </button>

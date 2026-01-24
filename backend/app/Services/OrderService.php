@@ -215,7 +215,8 @@ class OrderService
     public function getOrders(int $shopId, array $filters = [], int $perPage = 15)
     {
         $query = Order::with(['items.product', 'items.variant', 'items.options', 'tableSession.shopTable', 'user'])
-            ->where('shop_id', $shopId);
+            ->where('shop_id', $shopId)
+            ->visibleToStaff(); // Hides 'partial'
 
         // Filter by Date
         if (!empty($filters['start_date'])) {
@@ -245,7 +246,7 @@ class OrderService
     {
         return Order::with(['tableSession.shopTable', 'items.product', 'items.variant', 'items.options'])
             ->where('shop_id', $shopId)
-            ->where('shop_id', $shopId)
+            ->visibleToStaff() // Hides 'partial'
             ->whereIn('fulfillment_status', ['queue', 'preparing'])
             ->where(function ($query) {
                 // Show if confirmed OR confirmation_status is null (legacy/pos)

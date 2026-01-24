@@ -25,7 +25,8 @@ class GuestController extends Controller
      */
     public function scanTable($qrToken)
     {
-        $session = $this->sessionService->scanTable($qrToken);
+        $existingSessionToken = request()->input('session_token');
+        $session = $this->sessionService->scanTable($qrToken, $existingSessionToken);
 
         if (!$session) {
             return response()->json(['error' => 'Invalid QR code'], 404);
@@ -65,6 +66,22 @@ class GuestController extends Controller
             return response()->json(['error' => 'Shop not found'], 404);
         }
 
+        // Security: Only expose necessary public shop info
+        $publicShopData = [
+            'name' => $shop->name,
+            'slug' => $shop->slug,
+            'logo_url' => $shop->logo_url,
+            'address' => $shop->address,
+            'phone' => $shop->phone,
+            'currency_symbol' => $shop->currency_symbol,
+            'exchange_rate' => $shop->exchange_rate,
+            'primary_color' => $shop->primary_color,
+            'theme_mode' => $shop->theme_mode,
+            'merchant_name' => $shop->merchant_name, // Needed for KHQR display? Maybe.
+            'merchant_city' => $shop->merchant_city,
+            // 'is_ip_check_enabled' => $shop->ip_check_enabled, // Maybe useful for frontend to know if restriction exists
+        ];
+
         $categories = $shop->categories()
             ->with([
                 'products' => function ($query) {
@@ -75,8 +92,33 @@ class GuestController extends Controller
             ->get();
 
         return response()->json([
-            'shop' => $shop,
+            'shop' => $publicShopData,
             'categories' => $categories,
+        ]);
+    }
+
+    /**
+     * Check if current IP allows cash payment
+     * GET /api/guest/check-access/{shopSlug}
+     */
+    public function checkAccess(Request $request, $shopSlug)
+    {
+        $shop = \App\Models\Shop::where('slug', $shopSlug)->first();
+
+        if (!$shop) {
+            return response()->json(['error' => 'Shop not found'], 404);
+        }
+
+        $allowCash = true;
+
+        if ($shop->ip_check_enabled) {
+            $userIp = $request->server('HTTP_CF_CONNECTING_IP') ?? $request->ip();
+            $trustedIps = $shop->trusted_ips ?? [];
+            $allowCash = in_array($userIp, $trustedIps);
+        }
+
+        return response()->json([
+            'cash_payment_allowed' => $allowCash,
         ]);
     }
 

@@ -11,7 +11,14 @@ class TableSessionService
     /**
      * Scan QR code and create or retrieve active session
      */
-    public function scanTable(string $qrToken): ?TableSession
+    /**
+     * Scan QR code and create or retrieve active session
+     * 
+     * @param string $qrToken
+     * @param string|null $existingSessionToken
+     * @return TableSession|null
+     */
+    public function scanTable(string $qrToken, ?string $existingSessionToken = null): ?TableSession
     {
         // Find the table by QR token
         $shopTable = ShopTable::where('qr_token', $qrToken)->first();
@@ -20,33 +27,38 @@ class TableSessionService
             return null;
         }
 
-        // Check for active or ordering session
-        $activeSession = TableSession::where('shop_table_id', $shopTable->id)
-            ->whereIn('status', ['active', 'ordering'])
-            ->first();
+        // 1. Try to resume SPECIFIC existing session if provided
+        if ($existingSessionToken) {
+            $existingSession = TableSession::where('shop_table_id', $shopTable->id)
+                ->where('session_token', $existingSessionToken)
+                ->whereIn('status', ['active', 'ordering'])
+                ->first();
 
-        if ($activeSession) {
-            // Check if expired
-            if ($activeSession->expires_at && $activeSession->expires_at->isPast()) {
-                // Mark as closed/expired explicitly if needed, or just create new one
-                // Ideally, we should update status to avoid multiple "active" sessions logic confusion,
-                // though the query above filters by active/ordering.
-
-                // If it was "ordering", we might want to be careful, but if it's expired, it's expired.
-                $activeSession->update(['status' => 'closed']);
-            } else {
-                // Valid session, return it
-                return $activeSession->load('shopTable.shop');
+            if ($existingSession) {
+                // Check expiry
+                if ($existingSession->expires_at && $existingSession->expires_at->isPast()) {
+                    $existingSession->update(['status' => 'closed']);
+                } else {
+                    // Valid existing session, resume it
+                    return $existingSession->load('shopTable.shop');
+                }
             }
         }
 
-        // Create new session
+        // 2. Otherwise/Fallthrough: Create NEW session (isolation by default)
+        // We do NOT look for "any" active session anymore.
+
         $session = TableSession::create([
             'shop_table_id' => $shopTable->id,
             'session_token' => Str::random(100),
             'status' => 'active',
             'expires_at' => now()->addMinutes((int) env('TABLE_SESSION_LIFETIME', 120)),
         ]);
+
+        // Ensure table is marked occupied if it wasn't already
+        if ($shopTable->status === 'available') {
+            $shopTable->update(['status' => 'occupied']);
+        }
 
         return $session->load('shopTable.shop');
     }
@@ -85,8 +97,14 @@ class TableSessionService
     {
         $session->update(['status' => 'completed']);
 
-        // Mark table as available
-        $session->shopTable->update(['status' => 'available']);
+        // Only mark table as available if NO other active sessions exist
+        $activeCount = TableSession::where('shop_table_id', $session->shop_table_id)
+            ->whereIn('status', ['active', 'ordering'])
+            ->count();
+
+        if ($activeCount === 0) {
+            $session->shopTable->update(['status' => 'available']);
+        }
     }
 
     /**

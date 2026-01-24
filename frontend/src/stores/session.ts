@@ -18,7 +18,10 @@ export const useSessionStore = defineStore("session", () => {
 
   async function scanTable(qrToken: string) {
     try {
-      const response = await guestApi.scanTable(qrToken);
+      const response = await guestApi.scanTable(
+        qrToken,
+        sessionToken.value || undefined,
+      );
       const data = response.data as any;
 
       sessionToken.value = data.session_token;

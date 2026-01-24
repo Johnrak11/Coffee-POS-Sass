@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\OrderService;
 use App\Services\TableSessionService;
 use App\Services\BakongService;
+use App\Services\CartService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -13,15 +14,18 @@ class OrderController extends Controller
     protected $orderService;
     protected $sessionService;
     protected $bakongService;
+    protected $cartService;
 
     public function __construct(
         OrderService $orderService,
         TableSessionService $sessionService,
-        BakongService $bakongService
+        BakongService $bakongService,
+        CartService $cartService
     ) {
         $this->orderService = $orderService;
         $this->sessionService = $sessionService;
         $this->bakongService = $bakongService;
+        $this->cartService = $cartService;
     }
 
     /**
@@ -45,7 +49,8 @@ class OrderController extends Controller
         if ($validated['payment_method'] === 'cash') {
             $shop = $session->shopTable->shop;
             if ($shop && $shop->ip_check_enabled) {
-                $userIp = $request->ip();
+                // Use CF-Connecting-IP if available
+                $userIp = $request->server('HTTP_CF_CONNECTING_IP') ?? $request->ip();
                 $trustedIps = $shop->trusted_ips ?? [];
 
                 // Allow localhost for dev if it's in the list OR always allow if you want dev ease? 
@@ -116,7 +121,7 @@ class OrderController extends Controller
                     }
                 } catch (\Exception $e) {
                     // Log error but don't fail the order creation
-                    \Log::error('KHQR Generation Failed', [
+                    \Illuminate\Support\Facades\Log::error('KHQR Generation Failed', [
                         'order_id' => $order->id,
                         'error' => $e->getMessage()
                     ]);
@@ -233,19 +238,64 @@ class OrderController extends Controller
 
             // Check if PAID
             if ($result && isset($result['responseCode']) && $result['responseCode'] === 0) {
+                // EXPLOIT FIX V2: Partial Payment Handling
+                $paymentData = $result['data'] ?? [];
+                $paidAmount = isset($paymentData['amount']) ? (float) $paymentData['amount'] : null;
+
+                // Get current cart total
+                $cartData = $this->cartService->getCart($session);
+                $cartTotal = (float) $cartData['total'];
+
+                if ($paidAmount !== null && $paidAmount < $cartTotal) {
+                    // 1. Create Order as "Partial"
+                    $order = $this->orderService->createFromCart($session, 'khqr');
+                    $order->update([
+                        'payment_status' => 'partial',
+                        'khqr_md5' => $md5,
+                        'payment_metadata' => $result['data'] ?? null,
+                        'received_amount' => $paidAmount // Track received amount
+                    ]);
+
+                    // 2. Register Partial Transaction
+                    $order->transactions()->create([
+                        'payment_method' => 'khqr',
+                        'amount' => $paidAmount,
+                        'currency' => $order->payment_currency ?? 'USD',
+                        'khqr_string' => 'PARTIAL_PAYMENT',
+                        'md5_hash' => $md5,
+                        'verified_at' => now(),
+                        'payload' => ['success_data' => $result['data'] ?? null]
+                    ]);
+
+                    // 3. Mark Table Occupied (User is committed)
+                    $this->sessionService->markTableOccupied($session);
+                    $session->update(['status' => 'ordering']);
+
+                    // 4. DO NOT Send Notification (Hidden from Staff)
+
+                    return response()->json([
+                        'success' => true,
+                        'status' => 'partial',
+                        'order' => $order,
+                        'message' => 'Partial payment received. Please pay the remaining balance.',
+                        'paid_amount' => $paidAmount,
+                        'remaining_amount' => $order->remaining_amount
+                    ]);
+                }
+
+                // Normal Full Payment Flow
                 // Create Order as "Paid"
                 $order = $this->orderService->createFromCart($session, 'khqr');
 
                 $order->update([
                     'payment_status' => 'paid',
                     'khqr_md5' => $md5,
-                    'payment_metadata' => $result['data'] ?? null
+                    'payment_metadata' => $result['data'] ?? null,
+                    'received_amount' => $order->total_amount // Full payment
                 ]);
 
                 // Create Transaction Record
-                // Create Transaction Record
-                \App\Models\Transaction::create([
-                    'order_id' => $order->id,
+                $order->transactions()->create([
                     'payment_method' => 'khqr',
                     'amount' => $order->total_amount,
                     'currency' => $order->payment_currency ?? 'USD',
@@ -259,18 +309,109 @@ class OrderController extends Controller
                 $this->sessionService->markTableOccupied($session);
                 $session->update(['status' => 'ordering']);
 
-                // Send Notification
+                // Send Notification (Visible to Staff)
                 $shopUsers = \App\Models\User::where('shop_id', $shop->id)->get();
                 \Illuminate\Support\Facades\Notification::send($shopUsers, new \App\Notifications\NewOrderNotification($order));
 
                 return response()->json([
                     'success' => true,
+                    'status' => 'paid',
                     'order' => $order
                 ]);
             } else {
                 return response()->json(['error' => 'Payment not verified', 'details' => $result], 400);
             }
         } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Finalize REMAINING Payment for Partial Order
+     * POST /api/guest/checkout/finalize-payment
+     */
+    public function finalizePayment(Request $request)
+    {
+        $validated = $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'khqr_md5' => 'required|string',
+        ]);
+
+        $order = \App\Models\Order::findOrFail($validated['order_id']);
+        $md5 = $validated['khqr_md5'];
+
+        // Verify with Bakong
+        $shop = $order->shop;
+        if (!$shop) {
+            return response()->json(['error' => 'Shop not found'], 404);
+        }
+
+        // Prevent duplicate transaction usage
+        if ($order->transactions()->where('md5_hash', $md5)->exists()) {
+            return response()->json(['error' => 'Transaction already processed'], 409);
+        }
+
+        try {
+            $result = $this->bakongService->checkTransactionStatus(
+                $md5,
+                $shop->bakong_telegram_chat_id,
+                $shop->merchant_name ?? $shop->name
+            );
+
+            if ($result && isset($result['responseCode']) && $result['responseCode'] === 0) {
+                $paymentData = $result['data'] ?? [];
+                $paidAmount = isset($paymentData['amount']) ? (float) $paymentData['amount'] : 0.0;
+
+                // Register NEW Transaction
+                $order->transactions()->create([
+                    'payment_method' => 'khqr',
+                    'amount' => $paidAmount,
+                    'currency' => $order->payment_currency ?? 'USD',
+                    'khqr_string' => 'REMAINING_PAYMENT',
+                    'md5_hash' => $md5,
+                    'verified_at' => now(),
+                    'payload' => ['success_data' => $result['data'] ?? null]
+                ]);
+
+                // Re-calculate remaining amount
+                $order->refresh();
+                if ($order->remaining_amount <= 0.01) {
+                    // FULLY PAID
+                    $order->update([
+                        'payment_status' => 'paid',
+                        'received_amount' => $order->transactions()->sum('amount')
+                    ]);
+
+                    // NOW Send Notification
+                    $shopUsers = \App\Models\User::where('shop_id', $shop->id)->get();
+                    \Illuminate\Support\Facades\Notification::send($shopUsers, new \App\Notifications\NewOrderNotification($order));
+
+                    return response()->json([
+                        'success' => true,
+                        'status' => 'paid', // Done
+                        'order' => $order
+                    ]);
+                } else {
+                    // STILL PARTIAL
+                    return response()->json([
+                        'success' => true,
+                        'status' => 'partial',
+                        'order' => $order,
+                        'message' => 'Payment received. Balance remaining.',
+                        'paid_amount' => $paidAmount,
+                        'remaining_amount' => $order->remaining_amount
+                    ]);
+
+                    // Update received amount for partial steps too
+                    $order->update([
+                        'received_amount' => $order->transactions()->sum('amount')
+                    ]);
+                }
+            } else {
+                return response()->json(['error' => 'Payment not verified'], 400);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Finalize Payment Error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

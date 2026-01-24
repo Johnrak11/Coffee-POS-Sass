@@ -31,6 +31,7 @@ export interface CartResponse {
   items: CartItem[];
   total: number;
   item_count: number;
+  partial_order?: any;
 }
 
 // API Functions
@@ -38,8 +39,8 @@ export const guestApi = {
   /**
    * Scan QR code and create guest session
    */
-  async scanTable(qrToken: string): Promise<AxiosResponse<GuestSession>> {
-    return apiClient.post(`/guest/scan/${qrToken}`);
+  async scanTable(qrToken: string, sessionToken?: string): Promise<AxiosResponse<GuestSession>> {
+    return apiClient.post(`/guest/scan/${qrToken}`, { session_token: sessionToken });
   },
 
   /**
@@ -47,6 +48,13 @@ export const guestApi = {
    */
   async getMenu(shopSlug: string): Promise<AxiosResponse<any>> {
     return apiClient.get(`/guest/menu/${shopSlug}`);
+  },
+
+  /**
+   * Check if current IP allows cash payment
+   */
+  async checkAccess(shopSlug: string): Promise<AxiosResponse<any>> {
+    return apiClient.get(`/guest/check-access/${shopSlug}`);
   },
 
   /**
@@ -122,8 +130,9 @@ export const guestApi = {
   async generateKhqr(
     amount: number,
     currency: "USD" | "KHR",
+    sessionToken: string,
   ): Promise<AxiosResponse<any>> {
-    return apiClient.post("/khqr/generate", { amount, currency });
+    return apiClient.post("/khqr/generate", { amount, currency, session_token: sessionToken });
   },
 
   /**
@@ -135,6 +144,19 @@ export const guestApi = {
   ): Promise<AxiosResponse<any>> {
     return apiClient.post("/guest/checkout/finalize-khqr", {
       session_token: sessionToken,
+      khqr_md5: md5,
+    });
+  },
+
+  /**
+   * Finalize REMAINING Payment for Order
+   */
+  async finalizeOrderPayment(
+    orderId: number,
+    md5: string,
+  ): Promise<AxiosResponse<any>> {
+    return apiClient.post("/guest/checkout/finalize-payment", {
+      order_id: orderId,
       khqr_md5: md5,
     });
   },

@@ -12,6 +12,8 @@ export const useCartStore = defineStore("cart", () => {
   const itemCount = ref(0);
   const loading = ref(false);
 
+  const partialOrder = ref<any>(null);
+
   const isEmpty = computed(() => items.value.length === 0);
 
   async function fetchCart(skipLoading = false) {
@@ -25,12 +27,35 @@ export const useCartStore = defineStore("cart", () => {
       items.value = response.data.items || [];
       total.value = response.data.total || 0;
       itemCount.value = response.data.item_count || 0;
+      partialOrder.value = response.data.partial_order || null;
     } catch (error) {
-      console.error("Failed to fetch cart:", error);
+      // console.error("Failed to fetch cart:", error);
     } finally {
       if (!skipLoading) loading.value = false;
     }
   }
+
+  // ... (addItem, updateQuantity, removeItem methods remain the same) ...
+
+  return {
+    items,
+    total,
+    itemCount,
+    isEmpty,
+    loading,
+    partialOrder,
+    fetchCart,
+    addItem,
+    updateQuantity,
+    removeItem,
+    clearCart: () => {
+        items.value = [];
+        total.value = 0;
+        itemCount.value = 0;
+        partialOrder.value = null; // Maybe keep it if partial payment is ongoing?
+        // Actually, clearCart is usually called on success.
+    }
+  };
 
   async function addItem(
     product: any, // Changed to receive full product object for optimistic update
@@ -95,7 +120,7 @@ export const useCartStore = defineStore("cart", () => {
         });
         return false;
       }
-      console.error("Failed to add item:", error);
+      // console.error("Failed to add item:", error);
       return false;
     }
   }
@@ -133,7 +158,7 @@ export const useCartStore = defineStore("cart", () => {
       items.value = previousItems;
       total.value = previousTotal;
       itemCount.value = previousCount;
-      console.error("Failed to update quantity:", error);
+      // console.error("Failed to update quantity:", error);
       return false;
     }
   }
@@ -168,7 +193,7 @@ export const useCartStore = defineStore("cart", () => {
       total.value = previousTotal;
       itemCount.value = previousCount;
 
-      console.error("Failed to remove item:", error);
+      // console.error("Failed to remove item:", error);
       if ((error as any).response?.status === 404) {
         import("vue-sonner").then(({ toast }) => {
           toast.error("Session Expired", {

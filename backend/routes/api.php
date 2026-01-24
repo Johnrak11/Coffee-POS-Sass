@@ -23,6 +23,7 @@ Route::prefix('guest')->group(function () {
 
     // Menu
     Route::get('menu/{shopSlug}', [GuestController::class, 'getMenu']);
+    Route::get('check-access/{shopSlug}', [GuestController::class, 'checkAccess']);
 
     // Cart Management
     Route::post('cart/add', [GuestController::class, 'addToCart']);
@@ -33,6 +34,7 @@ Route::prefix('guest')->group(function () {
     // Checkout
     Route::post('checkout', [OrderController::class, 'checkout']);
     Route::post('checkout/finalize-khqr', [OrderController::class, 'finalizeKhqr']);
+    Route::post('checkout/finalize-payment', [OrderController::class, 'finalizePayment']);
 
     // Order Status (for payment polling)
     Route::get('order/{orderId}/status', [OrderController::class, 'getOrderStatus']);

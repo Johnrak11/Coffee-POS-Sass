@@ -60,9 +60,9 @@ class Order extends Model
         return $this->belongsTo(TableSession::class);
     }
 
-    public function transaction()
+    public function transactions()
     {
-        return $this->hasOne(Transaction::class);
+        return $this->hasMany(Transaction::class);
     }
 
     public function items()
@@ -84,5 +84,21 @@ class Order extends Model
     public function scopeInQueue($query)
     {
         return $query->where('fulfillment_status', 'queue');
+    }
+
+    public function scopeVisibleToStaff($query)
+    {
+        return $query->where('payment_status', '!=', 'partial');
+    }
+
+    // Accessors
+    public function getPaidAmountAttribute()
+    {
+        return $this->transactions()->sum('amount');
+    }
+
+    public function getRemainingAmountAttribute()
+    {
+        return max(0, $this->total_amount - $this->paid_amount);
     }
 }

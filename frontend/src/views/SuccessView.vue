@@ -37,6 +37,11 @@ onMounted(async () => {
   try {
     const response = await guestApi.getOrderStatus(Number(orderId));
     orderDetails.value = response.data;
+
+    // Safeguard: Redirect back if partial
+    if (orderDetails.value.payment_status === "partial") {
+      router.replace("/checkout");
+    }
   } catch (error) {
     console.error("Failed to load order info:", error);
   } finally {

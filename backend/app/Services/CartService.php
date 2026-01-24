@@ -81,10 +81,22 @@ class CartService
             return $item->product->price * $item->quantity;
         });
 
+        // Check for active partial order
+        $partialOrder = \App\Models\Order::where('table_session_id', $session->id)
+            ->where('payment_status', 'partial')
+            ->latest()
+            ->first();
+
+        // Append remaining_amount if order exists
+        if ($partialOrder) {
+            $partialOrder->append('remaining_amount');
+        }
+
         return [
             'items' => $cartItems,
             'total' => $total,
             'item_count' => $cartItems->sum('quantity'),
+            'partial_order' => $partialOrder
         ];
     }
 
