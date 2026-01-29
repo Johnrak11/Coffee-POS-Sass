@@ -23,6 +23,7 @@ Route::prefix('guest')->group(function () {
 
     // Menu
     Route::get('menu/{shopSlug}', [GuestController::class, 'getMenu']);
+    Route::get('promotions/{shopSlug}', [GuestController::class, 'getPromotions']);
     Route::get('check-access/{shopSlug}', [GuestController::class, 'checkAccess']);
 
     // Cart Management
@@ -124,6 +125,12 @@ Route::prefix('staff')->middleware([\App\Http\Middleware\CheckSubscription::clas
             Route::post('option-sets', [\App\Http\Controllers\Api\OptionSetController::class, 'store']);
             Route::put('option-sets/{optionSet}', [\App\Http\Controllers\Api\OptionSetController::class, 'update']);
             Route::delete('option-sets/{optionSet}', [\App\Http\Controllers\Api\OptionSetController::class, 'destroy']);
+
+            // Promotions Management
+            Route::get('promotions', [\App\Http\Controllers\Api\PromotionManagementController::class, 'index']);
+            Route::post('promotions', [\App\Http\Controllers\Api\PromotionManagementController::class, 'store']);
+            Route::put('promotions/{id}', [\App\Http\Controllers\Api\PromotionManagementController::class, 'update']);
+            Route::delete('promotions/{id}', [\App\Http\Controllers\Api\PromotionManagementController::class, 'destroy']);
         });
     });
 });

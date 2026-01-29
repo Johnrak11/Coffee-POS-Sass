@@ -28,7 +28,7 @@ async function fetchTables() {
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
   try {
     const response = await apiClient.get(
-      `/staff/admin/${shopSlug}/menu/tables`
+      `/staff/admin/${shopSlug}/menu/tables`,
     );
     tables.value = response.data;
   } catch (e) {
@@ -58,14 +58,14 @@ async function handleSubmit() {
     if (editingTable.value) {
       await apiClient.put(
         `/staff/admin/${shopSlug}/menu/tables/${editingTable.value.id}`,
-        form.value
+        form.value,
       );
     } else {
       await apiClient.post(`/staff/admin/${shopSlug}/menu/tables`, form.value);
     }
     uiStore.showToast(
       "success",
-      editingTable.value ? "Table updated" : "Table added"
+      editingTable.value ? "Table updated" : "Table added",
     );
     await fetchTables();
     showModal.value = false;
@@ -152,7 +152,7 @@ async function printOneTable(table: any) {
         shadow="md"
         hover
         rounded="2xl"
-        class="flex flex-col h-full bg-gradient-to-b from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/50"
+        class="flex flex-col h-full bg-linear-to-b from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/50"
       >
         <div class="flex justify-between items-start mb-6">
           <div class="flex gap-4 items-center">
@@ -210,7 +210,7 @@ async function printOneTable(table: any) {
           <BaseButton
             variant="secondary"
             size="sm"
-            class="!px-3"
+            class="px-3!"
             @click="printOneTable(table)"
             title="Print QR"
           >
@@ -249,7 +249,12 @@ async function printOneTable(table: any) {
             </svg>
             Rename
           </BaseButton>
-          <BaseButton variant="danger" size="sm" @click="deleteTable(table.id)">
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            class="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+            @click="deleteTable(table.id)"
+          >
             <svg
               class="w-5 h-5"
               fill="none"
@@ -394,7 +399,9 @@ async function printOneTable(table: any) {
 
         <!-- Table Number -->
         <div class="mt-4">
-          <p class="text-2xl font-bold uppercase tracking-[0.5em] text-gray-500">
+          <p
+            class="text-2xl font-bold uppercase tracking-[0.5em] text-gray-500"
+          >
             TABLE
           </p>
           <h2 class="text-8xl font-black mt-2">
@@ -412,7 +419,9 @@ async function printOneTable(table: any) {
 
 <style scoped>
 .shadow-inner-white {
-  box-shadow: 0 0 0 8px white, 0 10px 20px -10px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 0 0 8px white,
+    0 10px 20px -10px rgba(0, 0, 0, 0.1);
 }
 
 @media print {
@@ -437,10 +446,10 @@ async function printOneTable(table: any) {
   .print-only * {
     display: block;
   }
-  
+
   /* Flex is needed for the centering container */
   .print-only .flex {
-      display: flex !important;
+    display: flex !important;
   }
 }
 </style>

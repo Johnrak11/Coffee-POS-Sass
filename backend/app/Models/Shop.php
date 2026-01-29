@@ -73,6 +73,11 @@ class Shop extends Model
         return $this->hasMany(Order::class);
     }
 
+    public function promotions()
+    {
+        return $this->hasMany(Promotion::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

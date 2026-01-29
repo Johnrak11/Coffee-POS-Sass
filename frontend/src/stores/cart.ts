@@ -9,6 +9,9 @@ export const useCartStore = defineStore("cart", () => {
   const sessionStore = useSessionStore();
   const items = ref<CartItem[]>([]);
   const total = ref(0);
+  const subtotal = ref(0);
+  const discountAmount = ref(0);
+  const promotionId = ref<number | null>(null);
   const itemCount = ref(0);
   const loading = ref(false);
 
@@ -26,6 +29,9 @@ export const useCartStore = defineStore("cart", () => {
       });
       items.value = response.data.items || [];
       total.value = response.data.total || 0;
+      subtotal.value = response.data.subtotal || response.data.total || 0;
+      discountAmount.value = response.data.discount_amount || 0;
+      promotionId.value = response.data.promotion_id || null;
       itemCount.value = response.data.item_count || 0;
       partialOrder.value = response.data.partial_order || null;
     } catch (error) {
@@ -35,63 +41,41 @@ export const useCartStore = defineStore("cart", () => {
     }
   }
 
-  // ... (addItem, updateQuantity, removeItem methods remain the same) ...
-
-  return {
-    items,
-    total,
-    itemCount,
-    isEmpty,
-    loading,
-    partialOrder,
-    fetchCart,
-    addItem,
-    updateQuantity,
-    removeItem,
-    clearCart: () => {
-        items.value = [];
-        total.value = 0;
-        itemCount.value = 0;
-        partialOrder.value = null; // Maybe keep it if partial payment is ongoing?
-        // Actually, clearCart is usually called on success.
-    }
-  };
-
   async function addItem(
     product: any, // Changed to receive full product object for optimistic update
     quantity: number = 1,
     notes: string | null = null,
+    options: any[] = [],
   ) {
     if (!sessionStore.sessionToken) return false;
 
     // Optimistic Update
     const previousItems = [...items.value];
     const previousTotal = total.value;
+    const previousSubtotal = subtotal.value;
     const previousCount = itemCount.value;
 
-    // Simulate adding to local state immediately
-    const existingItemIndex = items.value.findIndex(
-      (i) => i.product_id === product.id,
-    );
+    // Calculate Option Price
+    const optionsTotal = options.reduce((sum, opt) => sum + Number(opt.extra_price || 0), 0);
+    const unitPrice = Number(product.price) + optionsTotal;
 
-    if (existingItemIndex > -1 && items.value[existingItemIndex]) {
-      items.value[existingItemIndex].quantity += quantity;
-    } else {
-      // Create a temporary item structure matching CartItem interface
-      items.value.push({
+    // Create a temporary item structure matching CartItem interface
+    items.value.push({
         id: -1, // Temporary ID
         cart_id: -1,
         product_id: product.id,
         quantity: quantity,
-        price: product.price, // Assuming price is available on product object
+        price: unitPrice, 
         notes: notes,
         product: product, // Store full product for display
-      } as any);
-    }
+        options: options
+    } as any);
+    
 
     // Update counts
     itemCount.value += quantity;
-    total.value += Number(product.price) * quantity;
+    subtotal.value += unitPrice * quantity;
+    total.value += unitPrice * quantity;
 
     try {
       await guestApi.addToCart({
@@ -99,6 +83,7 @@ export const useCartStore = defineStore("cart", () => {
         product_id: product.id,
         quantity,
         notes: notes || undefined,
+        options: options,
       });
       // Re-fetch to ensure data consistency with server (prices, taxes, etc)
       // Pass 'true' to skip loading indicator since we already showed the result
@@ -108,6 +93,7 @@ export const useCartStore = defineStore("cart", () => {
       // Revert on failure
       items.value = previousItems;
       total.value = previousTotal;
+      subtotal.value = previousSubtotal;
       itemCount.value = previousCount;
 
       if ((error as any).response?.status === 404) {
@@ -139,18 +125,18 @@ export const useCartStore = defineStore("cart", () => {
     if (itemIndex > -1 && item) {
       const diff = quantity - item.quantity;
       // Check if product exists before accessing price
-      const price = item.product ? Number(item.product.price) : 0;
+      const basePrice = item.product ? Number(item.product.price) : 0;
+      const optionsPrice = (item.options || []).reduce((sum: number, opt: any) => sum + Number(opt.extra_price || 0), 0);
+      const unitPrice = basePrice + optionsPrice;
 
       item.quantity = quantity;
-      total.value += price * diff;
+      total.value += unitPrice * diff;
       itemCount.value += diff;
     }
 
     try {
       await guestApi.updateCartItem(cartItemId, quantity);
       // Re-fetch to ensure consistency (especially if backend has logic)
-      // await fetchCart(true); // Can be skipped for pure speed if trusted, but safer to re-fetch occasionally?
-      // Actually for quantity, backend recalc might be safer. Let's re-fetch silently.
       await fetchCart(true);
       return true;
     } catch (error) {
@@ -175,9 +161,12 @@ export const useCartStore = defineStore("cart", () => {
     const item = items.value[itemIndex];
 
     if (itemIndex > -1 && item) {
-      // Check if product exists before accessing price
-      const price = item.product ? Number(item.product.price) : 0;
-      total.value -= price * item.quantity;
+      // Calculate full item price (base + options)
+      const basePrice = item.product ? Number(item.product.price) : 0;
+      const optionsPrice = (item.options || []).reduce((sum: number, opt: any) => sum + Number(opt.extra_price || 0), 0);
+      const unitPrice = basePrice + optionsPrice;
+      
+      total.value -= unitPrice * item.quantity;
       itemCount.value -= item.quantity;
       items.value.splice(itemIndex, 1);
     }
@@ -208,15 +197,23 @@ export const useCartStore = defineStore("cart", () => {
   function clearCart() {
     items.value = [];
     total.value = 0;
+    subtotal.value = 0;
+    discountAmount.value = 0;
+    promotionId.value = null;
     itemCount.value = 0;
+    partialOrder.value = null;
   }
 
   return {
     items,
     total,
+    subtotal,
+    discountAmount,
+    promotionId,
     itemCount,
     isEmpty,
     loading,
+    partialOrder,
     fetchCart,
     addItem,
     updateQuantity,
@@ -224,3 +221,4 @@ export const useCartStore = defineStore("cart", () => {
     clearCart,
   };
 });
+

@@ -280,9 +280,32 @@ const modalInitialMethod = computed(() => {
               {{ product.name }}
             </h3>
             <div class="mt-auto pt-2 flex justify-between items-center">
-              <span class="text-primary-600 font-bold"
-                >${{ formatPrice(product.price) }}</span
-              >
+              <div class="flex flex-col items-end">
+                <span
+                  v-if="posStore.getDiscountedPrice(product).hasDiscount"
+                  class="text-xs text-app-muted line-through"
+                >
+                  ${{ formatPrice(product.price) }}
+                </span>
+                <span
+                  class="font-bold flex items-center gap-1"
+                  :class="
+                    posStore.getDiscountedPrice(product).hasDiscount
+                      ? 'text-red-500'
+                      : 'text-primary-600'
+                  "
+                >
+                  <span
+                    v-if="posStore.getDiscountedPrice(product).badge"
+                    class="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-1 rounded"
+                  >
+                    {{ posStore.getDiscountedPrice(product).badge }}
+                  </span>
+                  ${{
+                    formatPrice(posStore.getDiscountedPrice(product).finalPrice)
+                  }}
+                </span>
+              </div>
               <div
                 class="w-6 h-6 bg-primary-100 dark:bg-primary-900/30 text-primary-600 rounded-full flex items-center justify-center font-bold"
               >
@@ -401,6 +424,25 @@ const modalInitialMethod = computed(() => {
           <div class="flex justify-between text-app-muted">
             <span>{{ $t("order.subtotal") }}</span>
             <span>${{ formatPrice(posStore.subtotal) }}</span>
+          </div>
+          <div
+            v-if="posStore.discountDetails.discountAmount > 0"
+            class="flex justify-between text-red-500"
+          >
+            <span class="flex items-center gap-1">
+              {{ $t("order.discount") }}
+              <span
+                v-if="posStore.discountDetails.promotionName"
+                class="text-xs bg-red-100 dark:bg-red-900/30 px-1 rounded"
+              >
+                {{ posStore.discountDetails.promotionName }}
+              </span>
+            </span>
+            <span
+              >-${{
+                formatPrice(posStore.discountDetails.discountAmount)
+              }}</span
+            >
           </div>
           <div class="flex justify-between text-xl font-bold text-app-text">
             <span>{{ $t("order.total") }}</span>

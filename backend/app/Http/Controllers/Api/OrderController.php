@@ -180,6 +180,7 @@ class OrderController extends Controller
             'order_number' => $order->order_number,
             'queue_number' => $order->queue_number,
             'total_amount' => (float) $order->total_amount,
+            'discount_amount' => (float) $order->discount_amount,
             'received_amount' => (float) $order->received_amount,
             'change' => (float) $order->change,
             'payment_status' => $order->payment_status,

@@ -300,8 +300,9 @@ async function deleteCategory(id: number) {
                   </svg>
                 </BaseButton>
                 <BaseButton
-                  variant="danger"
+                  variant="ghost"
                   size="sm"
+                  class="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                   @click="deleteCategory(cat.id)"
                 >
                   <svg

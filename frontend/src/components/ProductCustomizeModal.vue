@@ -189,26 +189,63 @@ function formatCurrency(amount: number) {
 
       <!-- Footer -->
       <div class="p-4 border-t border-gray-100 bg-gray-50">
-        <div class="flex items-center justify-between mb-4">
-          <div
-            class="flex items-center gap-3 bg-app-bg rounded-xl p-1 border border-app-border"
-          >
-            <button
-              @click="quantity > 1 && quantity--"
-              class="w-8 h-8 flex items-center justify-center hover:bg-app-surface rounded-lg transition-colors text-xl font-bold"
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div
+              class="flex items-center gap-3 bg-app-bg rounded-xl p-1 border border-app-border"
             >
-              -
-            </button>
-            <span class="w-8 text-center font-bold">{{ quantity }}</span>
-            <button
-              @click="quantity++"
-              class="w-8 h-8 flex items-center justify-center hover:bg-app-surface rounded-lg transition-colors text-xl font-bold"
-            >
-              +
-            </button>
+              <button
+                @click="quantity > 1 && quantity--"
+                class="w-8 h-8 flex items-center justify-center hover:bg-app-surface rounded-lg transition-colors text-xl font-bold"
+              >
+                -
+              </button>
+              <span class="w-8 text-center font-bold">{{ quantity }}</span>
+              <button
+                @click="quantity++"
+                class="w-8 h-8 flex items-center justify-center hover:bg-app-surface rounded-lg transition-colors text-xl font-bold"
+              >
+                +
+              </button>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-gray-500">Total Price</div>
+              <div class="text-xl font-bold">
+                {{ formatCurrency(totalPrice) }}
+              </div>
+            </div>
           </div>
-          <div class="text-xl font-bold">
-            {{ formatCurrency(totalPrice) }}
+          <!-- Price Breakdown -->
+          <div class="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg">
+            <div class="flex justify-between">
+              <span>Base Price:</span>
+              <span>{{
+                formatCurrency(Number(product?.price || 0) * quantity)
+              }}</span>
+            </div>
+            <div
+              v-if="
+                Object.values(selections).some(
+                  (v: any) => Number(v.extra_price || 0) > 0,
+                )
+              "
+              class="flex justify-between"
+            >
+              <span>Options:</span>
+              <span
+                >+{{
+                  formatCurrency(
+                    Object.values(selections).reduce(
+                      (sum: number, v: any) => sum + Number(v.extra_price || 0),
+                      0,
+                    ) * quantity,
+                  )
+                }}</span
+              >
+            </div>
+            <div class="text-[10px] text-gray-400 mt-1">
+              * Promotions apply at checkout
+            </div>
           </div>
         </div>
         <button

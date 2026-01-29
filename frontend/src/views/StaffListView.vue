@@ -58,14 +58,14 @@ async function handleSubmit() {
     if (editingStaff.value) {
       await apiClient.put(
         `/staff/admin/${shopSlug}/menu/staff/${editingStaff.value.id}`,
-        form.value
+        form.value,
       );
     } else {
       await apiClient.post(`/staff/admin/${shopSlug}/menu/staff`, form.value);
     }
     uiStore.showToast(
       "success",
-      editingStaff.value ? t("common.success") : "Staff added successfully"
+      editingStaff.value ? t("common.success") : "Staff added successfully",
     );
     await fetchStaff();
     showModal.value = false;
@@ -82,7 +82,7 @@ async function deleteStaff(id: number) {
 
   try {
     const response = await apiClient.delete(
-      `/staff/admin/${shopSlug}/menu/staff/${id}`
+      `/staff/admin/${shopSlug}/menu/staff/${id}`,
     );
     if (response.data.success) {
       uiStore.showToast("success", "Staff member removed");
@@ -210,8 +210,9 @@ function getRoleBadge(role: string) {
             {{ t("common.edit") }}
           </BaseButton>
           <BaseButton
-            variant="danger"
+            variant="ghost"
             size="sm"
+            class="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
             @click="deleteStaff(member.id)"
           >
             <svg

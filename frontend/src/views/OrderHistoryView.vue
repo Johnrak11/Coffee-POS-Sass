@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import apiClient from "@/api";
-import InvoiceModal from "@/components/InvoiceModal.vue";
+import ReceiptModal from "@/components/ReceiptModal.vue";
 import OrderDetailModal from "@/components/OrderDetailModal.vue";
 import PaymentModal from "@/components/PaymentModal.vue";
 
@@ -24,7 +24,7 @@ const filters = ref({
 });
 
 const showDetailsModal = ref(false);
-const showInvoiceModal = ref(false);
+const showReceiptModal = ref(false);
 const selectedOrder = ref<any>(null);
 
 import { useUIStore } from "@/stores/ui";
@@ -124,7 +124,7 @@ async function updateStatus(order: any, status: string) {
     // Auto-show receipt for paid orders
     if (status === "paid" && response.data.success) {
       selectedOrder.value = response.data.order;
-      showInvoiceModal.value = true;
+      showReceiptModal.value = true;
       // Close details modal if open
       showDetailsModal.value = false;
     } else if (status === "rejected") {
@@ -167,7 +167,7 @@ function handlePaymentSuccess() {
 
 function printOrder(order: any) {
   selectedOrder.value = order;
-  showInvoiceModal.value = true;
+  showReceiptModal.value = true;
   showDetailsModal.value = false;
 }
 
@@ -437,10 +437,10 @@ function formatAmount(order: any) {
       </div>
     </div>
 
-    <InvoiceModal
-      :show="showInvoiceModal"
+    <ReceiptModal
+      :show="showReceiptModal"
       :order="selectedOrder"
-      @close="showInvoiceModal = false"
+      @close="showReceiptModal = false"
     />
 
     <OrderDetailModal

@@ -20,6 +20,7 @@ const props = defineProps<{
     receiptFooter?: string;
     wifiSsid?: string;
     wifiPassword?: string;
+    discountAmount?: number;
   };
 }>();
 
@@ -71,8 +72,16 @@ async function handleDownloadImage() {
 function calculateItemTotal(item: any) {
   let price = Number(item.product.price);
   if (item.variant) price += Number(item.variant.extra_price || 0);
-  if (item.options) {
-    item.options.forEach((opt: any) => {
+
+  // Parse options if they are JSON string or array
+  const options = Array.isArray(item.options)
+    ? item.options
+    : typeof item.options === "string"
+      ? JSON.parse(item.options)
+      : [];
+
+  if (options) {
+    options.forEach((opt: any) => {
       price += Number(opt.extra_price || 0);
     });
   }
@@ -98,11 +107,11 @@ function calculateItemTotal(item: any) {
       >
         <!-- Print Actions (Hide in print) -->
         <div
-          class="bg-app-bg p-4 flex justify-between items-center print:hidden border-b border-app-border shrink-0"
+          class="bg-gray-50 p-4 flex justify-between items-center print:hidden border-b border-gray-200 shrink-0"
         >
           <button
             @click="$emit('close')"
-            class="px-4 py-2 text-app-muted hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+            class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
           >
             {{ $t("receipt.close") }}
           </button>
@@ -213,11 +222,15 @@ function calculateItemTotal(item: any) {
                     <div v-if="item.variant" class="text-xs text-gray-500">
                       {{ item.variant.name }}: {{ item.variant.option_name }}
                     </div>
-                    <div
-                      v-if="item.options && item.options.length > 0"
-                      class="text-xs text-gray-500 mt-0.5"
-                    >
-                      <div v-for="(opt, idx) in item.options" :key="idx">
+                    <div class="text-xs text-gray-500 mt-0.5">
+                      <div
+                        v-for="(opt, idx) in Array.isArray(item.options)
+                          ? item.options
+                          : typeof item.options === 'string'
+                            ? JSON.parse(item.options)
+                            : []"
+                        :key="idx"
+                      >
                         + {{ opt.group_name }}: {{ opt.option_name }}
                       </div>
                     </div>
@@ -234,6 +247,17 @@ function calculateItemTotal(item: any) {
           </div>
 
           <div class="border-t border-dashed border-gray-300 pt-4 space-y-1">
+            <div
+              v-if="receiptData.discountAmount"
+              class="flex justify-between text-xs font-bold"
+            >
+              <span>Discount</span>
+              <span
+                >- {{ currencySymbol
+                }}{{ formatAmount(receiptData.discountAmount) }}</span
+              >
+            </div>
+
             <div class="flex justify-between text-base font-bold">
               <span>{{ $t("receipt.total") }}</span>
               <span

@@ -98,6 +98,96 @@ let observer: IntersectionObserver | null = null;
 
 const pollInterval = ref<any>(null);
 
+// Promotions Logic
+const promotions = ref<any[]>([]);
+
+async function fetchPromotions(shopSlug: string) {
+  try {
+    const response = await guestApi.getPromotions(shopSlug);
+    promotions.value = response.data;
+  } catch (e) {
+    console.error("Failed to fetch promotions", e);
+  }
+}
+
+// Helper to check if product has BOGO promotion (for auto-add logic)
+function getBogoPromotion(productId: number) {
+  return promotions.value.find((promo) => {
+    if (promo.type === "buy_x_get_y") {
+      const rules = promo.rules || {};
+      const buyIds = rules.buy_product_ids || [];
+      const getIds = rules.get_product_ids || [];
+
+      // Check if this product qualifies for BOGO
+      if (buyIds.includes(productId) && getIds.includes(productId)) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+function getDiscountedPrice(product: any) {
+  let bestPrice = Number(product.price);
+  let hasDiscount = false;
+  let label = "";
+  let badge = "";
+
+  promotions.value.forEach((promo) => {
+    if (promo.type === "percentage") {
+      const rules = promo.rules || {};
+      const applicableIds = rules.applicable_product_ids || [];
+
+      if (applicableIds.length === 0 || applicableIds.includes(product.id)) {
+        const discountAmount = Number(product.price) * (promo.value / 100);
+        const currentPrice = Number(product.price) - discountAmount;
+
+        if (currentPrice < bestPrice) {
+          bestPrice = currentPrice;
+          hasDiscount = true;
+          label = `-${promo.value}%`;
+          badge = `-${promo.value}%`;
+        }
+      }
+    } else if (promo.type === "fixed") {
+      const rules = promo.rules || {};
+      const applicableIds = rules.applicable_product_ids || [];
+
+      if (applicableIds.includes(product.id)) {
+        const currentPrice = Math.max(
+          0,
+          Number(product.price) - Number(promo.value),
+        );
+        if (currentPrice < bestPrice) {
+          bestPrice = currentPrice;
+          hasDiscount = true;
+          label = `-$${Number(promo.value).toFixed(2)}`;
+          badge = `Save $${Number(promo.value).toFixed(2)}`;
+        }
+      }
+    } else if (promo.type === "buy_x_get_y") {
+      const rules = promo.rules || {};
+      const buyIds = rules.buy_product_ids || [];
+
+      if (buyIds.includes(product.id)) {
+        if (!hasDiscount) {
+          const buyQty = rules.buy_quantity || 1;
+          const getQty = rules.get_quantity || 1;
+          badge = `Buy ${buyQty} Get ${getQty}`;
+        }
+      }
+    }
+  });
+
+  return {
+    originalPrice: Number(product.price),
+    finalPrice: bestPrice,
+    hasDiscount,
+    label,
+    badge,
+  };
+}
+
 onMounted(async () => {
   window.addEventListener("scroll", handleScroll, { passive: true });
 
@@ -106,6 +196,9 @@ onMounted(async () => {
   try {
     const response = await guestApi.getMenu(shopSlug);
     categories.value = response.data.categories || [];
+
+    // Fetch promotions
+    fetchPromotions(shopSlug);
 
     // Update shop session info if missing
     if (response.data.shop) {
@@ -198,28 +291,86 @@ function handleProductClick(product: Product) {
 }
 
 async function handleCustomizeAdd(data: any) {
-  // Add product to cart (backend doesn't support options yet)
-  const success = await cartStore.addItem(data.product, data.quantity);
-  if (success) {
-    showCustomizeModal.value = false;
-    toast.success(`Added ${data.product.name} to cart`, {
-      description: `Quantity: ${data.quantity}`,
-      duration: 2000,
-    });
+  // Check if this product has BOGO promotion
+  const bogoPromo = getBogoPromotion(data.product.id);
+
+  if (bogoPromo) {
+    const rules = bogoPromo.rules || {};
+    const buyQty = rules.buy_quantity || 1;
+    const getQty = rules.get_quantity || 1;
+
+    // Calculate total quantity to add (buy + get quantities)
+    const totalQuantity = (data.quantity * (buyQty + getQty)) / buyQty;
+
+    // Add all items at once with the calculated total
+    const success = await cartStore.addItem(
+      data.product,
+      Math.floor(totalQuantity),
+      null,
+      data.options,
+    );
+
+    if (success) {
+      showCustomizeModal.value = false;
+      toast.success(`Added ${data.product.name} to cart`, {
+        description: `${Math.floor(totalQuantity)} items (BOGO: Buy ${buyQty} Get ${getQty})`,
+        duration: 3000,
+      });
+    } else {
+      toast.error("Failed to add to cart", {
+        description: "Please try again",
+      });
+    }
   } else {
-    toast.error("Failed to add to cart", {
-      description: "Please try again",
-    });
+    // No BOGO - add normally
+    const success = await cartStore.addItem(
+      data.product,
+      data.quantity,
+      null,
+      data.options,
+    );
+    if (success) {
+      showCustomizeModal.value = false;
+      toast.success(`Added ${data.product.name} to cart`, {
+        description: `Quantity: ${data.quantity}`,
+        duration: 2000,
+      });
+    } else {
+      toast.error("Failed to add to cart", {
+        description: "Please try again",
+      });
+    }
   }
 }
 
 async function addToCart(product: Product) {
-  const success = await cartStore.addItem(product, 1);
-  if (success) {
-    toast.success(`Added ${product.name} to cart`, {
-      description: "You can check your items in the cart.",
-      duration: 2000,
-    });
+  // Check if this product has BOGO promotion
+  const bogoPromo = getBogoPromotion(product.id);
+
+  if (bogoPromo) {
+    const rules = bogoPromo.rules || {};
+    const buyQty = rules.buy_quantity || 1;
+    const getQty = rules.get_quantity || 1;
+
+    // Calculate total quantity to add (buy + get quantities)
+    const totalQuantity = buyQty + getQty;
+
+    const success = await cartStore.addItem(product, totalQuantity);
+    if (success) {
+      toast.success(`Added ${product.name} to cart`, {
+        description: `${totalQuantity} items (BOGO: Buy ${buyQty} Get ${getQty})`,
+        duration: 3000,
+      });
+    }
+  } else {
+    // No BOGO - add normally
+    const success = await cartStore.addItem(product, 1);
+    if (success) {
+      toast.success(`Added ${product.name} to cart`, {
+        description: "You can check your items in the cart.",
+        duration: 2000,
+      });
+    }
   }
 }
 </script>
@@ -372,9 +523,30 @@ async function addToCart(product: Product) {
                 <h3 class="font-semibold text-gray-900 text-sm line-clamp-2">
                   {{ product.name }}
                 </h3>
-                <p class="text-primary-600 font-bold mt-1">
-                  ${{ Number(product.price).toFixed(2) }}
-                </p>
+                <div class="flex flex-col items-start mt-1">
+                  <span
+                    v-if="getDiscountedPrice(product).hasDiscount"
+                    class="text-xs text-gray-400 line-through"
+                  >
+                    ${{ Number(product.price).toFixed(2) }}
+                  </span>
+                  <span
+                    class="font-bold flex items-center gap-1"
+                    :class="
+                      getDiscountedPrice(product).hasDiscount
+                        ? 'text-red-500'
+                        : 'text-primary-600'
+                    "
+                  >
+                    ${{ getDiscountedPrice(product).finalPrice.toFixed(2) }}
+                    <span
+                      v-if="getDiscountedPrice(product).badge"
+                      class="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-1 rounded font-bold"
+                    >
+                      {{ getDiscountedPrice(product).badge }}
+                    </span>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -435,9 +607,30 @@ async function addToCart(product: Product) {
                   <h3 class="font-semibold text-gray-900 text-sm line-clamp-2">
                     {{ product.name }}
                   </h3>
-                  <p class="text-primary-600 font-bold mt-1">
-                    ${{ Number(product.price).toFixed(2) }}
-                  </p>
+                  <div class="flex flex-col items-start mt-1">
+                    <span
+                      v-if="getDiscountedPrice(product).hasDiscount"
+                      class="text-xs text-gray-400 line-through"
+                    >
+                      ${{ Number(product.price).toFixed(2) }}
+                    </span>
+                    <span
+                      class="font-bold flex items-center gap-1"
+                      :class="
+                        getDiscountedPrice(product).hasDiscount
+                          ? 'text-red-500'
+                          : 'text-primary-600'
+                      "
+                    >
+                      ${{ getDiscountedPrice(product).finalPrice.toFixed(2) }}
+                      <span
+                        v-if="getDiscountedPrice(product).badge"
+                        class="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 px-1 rounded font-bold"
+                      >
+                        {{ getDiscountedPrice(product).badge }}
+                      </span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

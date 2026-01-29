@@ -23,10 +23,13 @@ class Order extends Model
         'exchange_rate_snapshot',
         'received_amount',
         'confirmation_status',
+        'promotion_id',
+        'discount_amount',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'payment_metadata' => 'array',
     ];
 
@@ -58,6 +61,11 @@ class Order extends Model
     public function tableSession()
     {
         return $this->belongsTo(TableSession::class);
+    }
+
+    public function promotion()
+    {
+        return $this->belongsTo(Promotion::class);
     }
 
     public function transactions()

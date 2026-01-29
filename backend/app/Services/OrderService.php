@@ -10,10 +10,12 @@ use App\Models\Shop;
 class OrderService
 {
     protected $cartService;
+    protected $promotionService;
 
-    public function __construct(CartService $cartService)
+    public function __construct(CartService $cartService, PromotionService $promotionService)
     {
         $this->cartService = $cartService;
+        $this->promotionService = $promotionService;
     }
 
     /**
@@ -33,12 +35,27 @@ class OrderService
         // Determine confirmation status
         $confirmationStatus = ($paymentMethod === 'cash') ? 'pending_confirmation' : 'confirmed';
 
+        // Calculate Discount
+        $promotionResult = $this->promotionService->calculateDiscount(
+            new Order(['shop_id' => $session->shopTable->shop_id, 'total_amount' => $cart['subtotal'] ?? $cart['total']]),
+            $cart['items']->toArray()
+        );
+
+        $discountAmount = $promotionResult['discount_amount'];
+        $promotionId = $promotionResult['promotion_id'];
+
+        // Use subtotal if available (from our updated CartService), else fallback to total
+        $baseTotal = $cart['subtotal'] ?? $cart['total'];
+        $finalTotal = max(0, $baseTotal - $discountAmount);
+
         // Create order
         $order = Order::create([
             'shop_id' => $session->shopTable->shop_id,
             'table_session_id' => $session->id,
             'order_number' => $orderNumber,
-            'total_amount' => $cart['total'],
+            'total_amount' => $finalTotal,
+            'discount_amount' => $discountAmount,
+            'promotion_id' => $promotionId,
             'payment_method' => $paymentMethod,
             'payment_status' => 'pending',
             'confirmation_status' => $confirmationStatus,
@@ -90,8 +107,18 @@ class OrderService
                 }
             }
 
-            $total += ($price + $extraPrice) * $item['quantity'];
+            $subtotal += ($price + $extraPrice) * $item['quantity'];
         }
+
+        // Calculate Promotion
+        $promotionResult = $this->promotionService->calculateDiscount(
+            new Order(['shop_id' => $shopId, 'total_amount' => $subtotal]),
+            $items
+        );
+
+        $discountAmount = $promotionResult['discount_amount'];
+        $promotionId = $promotionResult['promotion_id'];
+        $total = max(0, $subtotal - $discountAmount);
 
         // Generate order number
         $orderNumber = $this->generateOrderNumber($shopId);
@@ -113,6 +140,8 @@ class OrderService
             'table_session_id' => null, // No session for POS
             'order_number' => $orderNumber,
             'total_amount' => $total,
+            'discount_amount' => $discountAmount,
+            'promotion_id' => $promotionId,
             'payment_method' => $paymentMethod,
             'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending',
             'fulfillment_status' => 'queue',

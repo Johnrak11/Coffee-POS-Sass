@@ -25,11 +25,20 @@ export interface CartItem {
     price: number;
     image_url: string | null;
   };
+  options?: Array<{
+    product_variant_id: number;
+    group_name: string;
+    option_name: string;
+    extra_price: number;
+  }>;
 }
 
 export interface CartResponse {
   items: CartItem[];
   total: number;
+  subtotal?: number;
+  discount_amount?: number;
+  promotion_id?: number | null;
   item_count: number;
   partial_order?: any;
 }
@@ -51,6 +60,13 @@ export const guestApi = {
   },
 
   /**
+   * Get promotions for a shop
+   */
+  async getPromotions(shopSlug: string): Promise<AxiosResponse<any[]>> {
+    return apiClient.get(`/guest/promotions/${shopSlug}`);
+  },
+
+  /**
    * Check if current IP allows cash payment
    */
   async checkAccess(shopSlug: string): Promise<AxiosResponse<any>> {
@@ -65,6 +81,7 @@ export const guestApi = {
     product_id: number;
     quantity?: number;
     notes?: string;
+    options?: any[];
   }): Promise<AxiosResponse<any>> {
     return apiClient.post("/guest/cart/add", data);
   },

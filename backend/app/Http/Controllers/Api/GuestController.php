@@ -98,6 +98,32 @@ class GuestController extends Controller
     }
 
     /**
+     * Get active promotions for shop
+     * GET /api/guest/promotions/{shopSlug}
+     */
+    public function getPromotions($shopSlug)
+    {
+        $shop = \App\Models\Shop::where('slug', $shopSlug)->first();
+
+        if (!$shop) {
+            return response()->json(['error' => 'Shop not found'], 404);
+        }
+
+        $now = now();
+        $promotions = \App\Models\Promotion::where('shop_id', $shop->id)
+            ->where('is_active', true)
+            ->where(function ($q) use ($now) {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
+            })
+            ->where(function ($q) use ($now) {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
+            })
+            ->get();
+
+        return response()->json($promotions);
+    }
+
+    /**
      * Check if current IP allows cash payment
      * GET /api/guest/check-access/{shopSlug}
      */
@@ -145,7 +171,8 @@ class GuestController extends Controller
             $session,
             $validated['product_id'],
             $validated['quantity'] ?? 1,
-            $validated['notes'] ?? null
+            $validated['notes'] ?? null,
+            $request->input('options', []) // Pass options (array)
         );
 
         return response()->json([

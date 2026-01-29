@@ -30,6 +30,7 @@ const receiptData = computed(() => {
     shopPhone: o.shop?.phone,
     wifiSsid: o.shop?.wifi_ssid,
     wifiPassword: o.shop?.wifi_password,
+    discountAmount: Number(o.discount_amount || 0),
   };
 });
 

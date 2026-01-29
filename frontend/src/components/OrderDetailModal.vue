@@ -120,34 +120,54 @@ function formatTotal(order: any) {
             <div
               v-for="item in order?.items"
               :key="item.id"
-              class="flex justify-between items-start border-b border-app-border pb-2"
+              class="border-b border-app-border pb-3"
             >
-              <div class="flex gap-3">
-                <div
-                  class="w-8 h-8 rounded bg-app-bg flex items-center justify-center font-bold text-sm text-app-muted border border-app-border"
-                >
-                  {{ item.quantity }}x
-                </div>
-                <div>
-                  <p class="font-medium text-app-text">
-                    {{ item.product?.name }}
-                  </p>
-                  <p v-if="item.variant" class="text-sm text-app-muted">
-                    {{ item.variant.name }}
-                  </p>
+              <div class="flex justify-between items-start">
+                <div class="flex gap-3 flex-1">
                   <div
-                    v-if="item.options && item.options.length > 0"
-                    class="text-xs text-app-muted mt-1"
+                    class="w-8 h-8 rounded bg-app-bg flex items-center justify-center font-bold text-sm text-app-muted border border-app-border"
                   >
-                    <div v-for="(opt, idx) in item.options" :key="idx">
-                      + {{ opt.group_name }}: {{ opt.option_name }}
+                    {{ item.quantity }}x
+                  </div>
+                  <div class="flex-1">
+                    <p class="font-medium text-app-text">
+                      {{ item.product?.name }}
+                    </p>
+                    <p v-if="item.variant" class="text-sm text-app-muted">
+                      {{ item.variant.name }}
+                    </p>
+                    <div
+                      v-if="item.options && item.options.length > 0"
+                      class="text-xs text-app-muted mt-1 space-y-0.5"
+                    >
+                      <div
+                        v-for="(opt, idx) in item.options"
+                        :key="idx"
+                        class="flex justify-between"
+                      >
+                        <span
+                          >+ {{ opt.group_name }}: {{ opt.option_name }}</span
+                        >
+                        <span
+                          v-if="opt.extra_price && Number(opt.extra_price) > 0"
+                          class="text-xs"
+                        >
+                          +${{ Number(opt.extra_price).toFixed(2) }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
+                <div class="text-right">
+                  <span class="font-mono text-app-text font-semibold"
+                    >${{ Number(item.subtotal).toFixed(2) }}</span
+                  >
+                  <div class="text-[10px] text-app-muted mt-0.5">
+                    ${{ Number(item.price || 0).toFixed(2) }} ×
+                    {{ item.quantity }}
+                  </div>
+                </div>
               </div>
-              <span class="font-mono text-app-text"
-                >${{ Number(item.subtotal).toFixed(2) }}</span
-              >
             </div>
           </div>
 
@@ -156,6 +176,13 @@ function formatTotal(order: any) {
             <div class="flex justify-between text-app-muted text-sm">
               <span>Subtotal</span>
               <span>${{ subtotal.toFixed(2) }}</span>
+            </div>
+            <div
+              v-if="order?.discount_amount && Number(order.discount_amount) > 0"
+              class="flex justify-between text-green-600 text-sm font-semibold"
+            >
+              <span>Discount</span>
+              <span>-${{ Number(order.discount_amount).toFixed(2) }}</span>
             </div>
             <div
               class="flex justify-between font-bold text-xl text-app-text pt-2 border-t border-app-border"

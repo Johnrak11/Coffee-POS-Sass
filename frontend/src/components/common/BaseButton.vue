@@ -38,11 +38,10 @@ const buttonClasses = computed(() => {
       "bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 dark:bg-primary-500 dark:hover:bg-primary-600",
     secondary:
       "bg-secondary-100 text-secondary-900 hover:bg-secondary-200 focus:ring-secondary-500 dark:bg-secondary-800 dark:text-secondary-100 dark:hover:bg-secondary-700",
-    danger: "bg-error-600 text-white hover:bg-error-700 focus:ring-error-500",
+    danger: "bg-danger text-white hover:bg-red-600 focus:ring-red-500",
     ghost:
       "bg-transparent text-secondary-700 hover:bg-secondary-100 focus:ring-secondary-500 dark:text-secondary-300 dark:hover:bg-secondary-800",
-    success:
-      "bg-success-600 text-white hover:bg-success-700 focus:ring-success-500",
+    success: "bg-success text-white hover:bg-green-600 focus:ring-green-500",
     outline:
       "bg-transparent border border-secondary-300 text-secondary-700 hover:bg-secondary-50 focus:ring-secondary-500 dark:border-secondary-600 dark:text-secondary-300 dark:hover:bg-secondary-800/50",
   };

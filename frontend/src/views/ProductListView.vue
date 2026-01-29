@@ -60,7 +60,7 @@ async function fetchProducts(p: number = 1) {
     products.value = response.data;
   } catch (e) {
     console.error(e);
-    uiStore.showToast("error", "Failed to load products");
+    uiStore.showToast("error", t("product.loadFailed"));
   } finally {
     loading.value = false;
   }
@@ -212,27 +212,27 @@ async function handleSubmit() {
 
     uiStore.showToast(
       "success",
-      editingProduct.value ? "Product updated" : "Product added",
+      editingProduct.value ? t("product.updated") : t("product.added"),
     );
     await fetchProducts();
     showModal.value = false;
   } catch (e) {
     console.error(e);
-    uiStore.showToast("error", "Failed to save product");
+    uiStore.showToast("error", t("product.saveFailed"));
   } finally {
     saving.value = false;
   }
 }
 
 async function deleteProduct(id: number) {
-  if (!confirm("Delete this product?")) return;
+  if (!confirm(t("product.confirmDelete"))) return;
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
   try {
     await apiClient.delete(`/staff/admin/${shopSlug}/menu/products/${id}`);
-    uiStore.showToast("success", "Product deleted");
+    uiStore.showToast("success", t("product.deleted"));
     await fetchProducts();
   } catch (e) {
-    uiStore.showToast("error", "Failed to delete");
+    uiStore.showToast("error", t("product.deleteFailed"));
   }
 }
 
@@ -255,11 +255,11 @@ function formatCurrency(val: number) {
           {{ t("nav.products") || "Products" }}
         </h1>
         <p class="text-text-secondary dark:text-gray-400">
-          Manage your items, pricing, and availability.
+          {{ t("product.manageDesc") }}
         </p>
       </div>
-      <BaseButton variant="primary" size="lg" @click="openAddModal">
-        + Add Product
+      <BaseButton variant="primary" size="md" @click="openAddModal">
+        + {{ t("product.addProduct") }}
       </BaseButton>
     </div>
 
@@ -269,7 +269,7 @@ function formatCurrency(val: number) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search products..."
+          :placeholder="t('common.search')"
           class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
         />
       </div>
@@ -277,7 +277,7 @@ function formatCurrency(val: number) {
         v-model="selectedCategory"
         class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
       >
-        <option value="all">All Categories</option>
+        <option value="all">{{ t("product.allCategories") }}</option>
         <option v-for="cat in categories" :key="cat.id" :value="cat.id">
           {{ cat.name }}
         </option>
@@ -286,9 +286,9 @@ function formatCurrency(val: number) {
         v-model="selectedStatus"
         class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
       >
-        <option value="all">All Status</option>
-        <option value="available">Available</option>
-        <option value="unavailable">Unavailable</option>
+        <option value="all">{{ t("common.allStatus") }}</option>
+        <option value="available">{{ t("product.available") }}</option>
+        <option value="unavailable">{{ t("product.unavailable") }}</option>
       </select>
     </div>
 
@@ -302,11 +302,13 @@ function formatCurrency(val: number) {
             class="bg-app-bg text-app-muted text-xs uppercase font-bold sticky top-0 border-b border-app-border"
           >
             <tr>
-              <th class="text-left px-4 py-3">Product</th>
-              <th class="text-left px-4 py-3">Category</th>
-              <th class="text-left px-4 py-3">Price</th>
-              <th class="text-left px-4 py-3">Status</th>
-              <th class="text-right px-4 py-3">Actions</th>
+              <th class="text-left px-4 py-3">
+                {{ t("product.productName") }}
+              </th>
+              <th class="text-left px-4 py-3">{{ t("product.category") }}</th>
+              <th class="text-left px-4 py-3">{{ t("product.price") }}</th>
+              <th class="text-left px-4 py-3">{{ t("transaction.status") }}</th>
+              <th class="text-right px-4 py-3">{{ t("common.actions") }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-app-border">
@@ -321,10 +323,12 @@ function formatCurrency(val: number) {
             </tr>
             <tr v-else-if="products.data.length === 0">
               <td colspan="5" class="p-12 text-center">
-                <div class="text-app-muted mb-2">No products found</div>
-                <BaseButton variant="primary" size="sm" @click="openAddModal"
-                  >Add your first product</BaseButton
-                >
+                <div class="text-app-muted mb-2">
+                  {{ t("product.noProducts") }}
+                </div>
+                <BaseButton variant="primary" size="sm" @click="openAddModal">{{
+                  t("product.addFirstProduct")
+                }}</BaseButton>
               </td>
             </tr>
             <tr
@@ -354,7 +358,7 @@ function formatCurrency(val: number) {
                       class="text-xs text-primary-600 dark:text-primary-400"
                     >
                       {{ product.variants.length }}
-                      {{ product.variants.length === 1 ? "option" : "options" }}
+                      {{ t("product.option", product.variants.length) }}
                     </div>
                   </div>
                 </div>
@@ -363,7 +367,7 @@ function formatCurrency(val: number) {
                 <span
                   class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-medium uppercase"
                 >
-                  {{ product.category?.name || "No Category" }}
+                  {{ product.category?.name || t("product.noCategory") }}
                 </span>
               </td>
               <td class="p-4">
@@ -386,7 +390,11 @@ function formatCurrency(val: number) {
                       product.is_available ? 'bg-success-500' : 'bg-gray-400',
                     ]"
                   ></div>
-                  {{ product.is_available ? "Available" : "Unavailable" }}
+                  {{
+                    product.is_available
+                      ? t("product.available")
+                      : t("product.unavailable")
+                  }}
                 </span>
               </td>
               <td class="p-4">
@@ -411,8 +419,9 @@ function formatCurrency(val: number) {
                     </svg>
                   </BaseButton>
                   <BaseButton
-                    variant="danger"
+                    variant="ghost"
                     size="sm"
+                    class="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                     @click="deleteProduct(product.id)"
                   >
                     <svg
@@ -442,7 +451,8 @@ function formatCurrency(val: number) {
         class="border-t border-gray-100 dark:border-gray-700 p-4 flex justify-between items-center"
       >
         <div class="text-sm text-gray-500 dark:text-gray-400">
-          Page {{ products.current_page }} of {{ products.last_page }}
+          {{ t("common.page") }} {{ products.current_page }}
+          {{ t("common.of") }} {{ products.last_page }}
         </div>
         <div class="flex gap-2">
           <BaseButton
@@ -451,7 +461,7 @@ function formatCurrency(val: number) {
             :disabled="products.current_page === 1"
             @click="fetchProducts(products.current_page - 1)"
           >
-            Previous
+            {{ t("common.previous") }}
           </BaseButton>
           <BaseButton
             variant="secondary"
@@ -459,7 +469,7 @@ function formatCurrency(val: number) {
             :disabled="products.current_page === products.last_page"
             @click="fetchProducts(products.current_page + 1)"
           >
-            Next
+            {{ t("common.next") }}
           </BaseButton>
         </div>
       </div>
@@ -477,7 +487,9 @@ function formatCurrency(val: number) {
         class="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
       >
         <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-          {{ editingProduct ? "Edit Product" : "New Product" }}
+          {{
+            editingProduct ? t("product.editProduct") : t("product.newProduct")
+          }}
         </h2>
 
         <form @submit.prevent="handleSubmit" class="space-y-6">
@@ -485,7 +497,7 @@ function formatCurrency(val: number) {
           <div>
             <label
               class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >Product Image</label
+              >{{ t("product.productImage") }}</label
             >
             <ImageUpload
               v-model="form.image_url"
@@ -497,8 +509,8 @@ function formatCurrency(val: number) {
           <!-- Product Name -->
           <BaseInput
             v-model="form.name"
-            label="Product Name"
-            placeholder="e.g. Espresso"
+            :label="t('product.productName')"
+            :placeholder="t('product.exampleName')"
             required
           />
 
@@ -507,13 +519,13 @@ function formatCurrency(val: number) {
             <div>
               <label
                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
-                >Category</label
+                >{{ t("product.category") }}</label
               >
               <select
                 v-model="form.category_id"
                 class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
               >
-                <option value="">No Category</option>
+                <option value="">{{ t("product.noCategory") }}</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
                   {{ cat.name }}
                 </option>
@@ -521,7 +533,7 @@ function formatCurrency(val: number) {
             </div>
             <BaseInput
               v-model="form.price"
-              label="Base Price"
+              :label="t('product.basePrice')"
               type="number"
               step="0.01"
               placeholder="0.00"
@@ -540,7 +552,7 @@ function formatCurrency(val: number) {
             <label
               for="available"
               class="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >Available for order</label
+              >{{ t("product.availableForOrder") }}</label
             >
           </div>
 
@@ -549,14 +561,14 @@ function formatCurrency(val: number) {
             <div class="flex justify-between items-center mb-4">
               <label
                 class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                >Options & Variants</label
+                >{{ t("product.optionsVariants") }}</label
               >
               <div class="flex gap-2">
                 <select
                   @change="handlePresetChange"
                   class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-xs"
                 >
-                  <option value="">Apply Preset...</option>
+                  <option value="">{{ t("product.applyPreset") }}</option>
                   <option
                     v-for="set in optionSets"
                     :key="set.id"
@@ -571,7 +583,7 @@ function formatCurrency(val: number) {
                   size="sm"
                   @click="addVariant"
                 >
-                  + Add
+                  + {{ t("common.add") }}
                 </BaseButton>
               </div>
             </div>
@@ -581,14 +593,14 @@ function formatCurrency(val: number) {
               class="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700"
             >
               <p class="text-gray-500 dark:text-gray-400 text-sm mb-3">
-                No options yet
+                {{ t("product.noOptions") }}
               </p>
               <BaseButton
                 type="button"
                 variant="primary"
                 size="sm"
                 @click="addVariant"
-                >Add First Option</BaseButton
+                >{{ t("product.addFirstOption") }}</BaseButton
               >
             </div>
 
@@ -601,13 +613,13 @@ function formatCurrency(val: number) {
                 <input
                   v-model="variant.name"
                   type="text"
-                  placeholder="Group (e.g. Size)"
+                  :placeholder="t('product.groupPlaceholder')"
                   class="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-primary-500 outline-none"
                 />
                 <input
                   v-model="variant.option_name"
                   type="text"
-                  placeholder="Option (e.g. Large)"
+                  :placeholder="t('product.optionPlaceholder')"
                   class="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-primary-500 outline-none"
                 />
                 <input
@@ -653,10 +665,10 @@ function formatCurrency(val: number) {
             <BaseButton type="submit" variant="primary" :loading="saving">
               {{
                 saving
-                  ? "Saving..."
+                  ? t("common.saving")
                   : editingProduct
-                    ? "Update Product"
-                    : "Create Product"
+                    ? t("product.updateProduct")
+                    : t("product.createProduct")
               }}
             </BaseButton>
           </div>

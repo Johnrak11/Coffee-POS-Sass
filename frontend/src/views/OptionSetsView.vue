@@ -49,7 +49,7 @@ async function fetchOptionSets() {
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
   try {
     const response = await apiClient.get(
-      `/staff/admin/${shopSlug}/menu/option-sets`
+      `/staff/admin/${shopSlug}/menu/option-sets`,
     );
     optionSets.value = response.data;
   } catch (e) {
@@ -83,17 +83,17 @@ async function handleSubmit() {
     if (editingSet.value) {
       await apiClient.put(
         `/staff/admin/${shopSlug}/menu/option-sets/${editingSet.value.id}`,
-        form.value
+        form.value,
       );
     } else {
       await apiClient.post(
         `/staff/admin/${shopSlug}/menu/option-sets`,
-        form.value
+        form.value,
       );
     }
     uiStore.showToast(
       "success",
-      editingSet.value ? t("common.success") : "Option set created"
+      editingSet.value ? t("common.success") : "Option set created",
     );
     await fetchOptionSets();
     showModal.value = false;
@@ -108,7 +108,7 @@ async function handleSubmit() {
 async function confirmDelete(set: any) {
   if (
     !confirm(
-      `Delete "${set.name}"? This will not affect existing products/orders.`
+      `Delete "${set.name}"? This will not affect existing products/orders.`,
     )
   )
     return;
@@ -116,7 +116,7 @@ async function confirmDelete(set: any) {
   const shopSlug = authStore.shop?.slug || "lucky-cafe";
   try {
     await apiClient.delete(
-      `/staff/admin/${shopSlug}/menu/option-sets/${set.id}`
+      `/staff/admin/${shopSlug}/menu/option-sets/${set.id}`,
     );
     uiStore.showToast("success", "Option set deleted");
     await fetchOptionSets();
@@ -209,7 +209,12 @@ onMounted(() => {
                 ></path>
               </svg>
             </BaseButton>
-            <BaseButton variant="danger" size="sm" @click="confirmDelete(set)">
+            <BaseButton
+              variant="ghost"
+              size="sm"
+              class="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+              @click="confirmDelete(set)"
+            >
               <svg
                 class="w-5 h-5"
                 fill="none"
