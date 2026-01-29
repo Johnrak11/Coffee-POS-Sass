@@ -26,6 +26,7 @@ const filters = ref({
 const showDetailsModal = ref(false);
 const showReceiptModal = ref(false);
 const selectedOrder = ref<any>(null);
+const receiptData = ref<any>(null);
 
 import { useUIStore } from "@/stores/ui";
 
@@ -167,6 +168,28 @@ function handlePaymentSuccess() {
 
 function printOrder(order: any) {
   selectedOrder.value = order;
+
+  // Format order data for ReceiptModal
+  receiptData.value = {
+    items: order.items || [],
+    total: Number(order.total_amount),
+    cashReceived: Number(order.received_amount || order.total_amount),
+    change:
+      Number(order.received_amount || order.total_amount) -
+      Number(order.total_amount),
+    orderNumber: order.order_number,
+    queueNumber: order.queue_number,
+    shopName: authStore.shop?.name,
+    shopAddress: authStore.shop?.address,
+    shopPhone: authStore.shop?.phone,
+    receiptFooter: authStore.shop?.receipt_footer,
+    wifiSsid: authStore.shop?.wifi_ssid,
+    wifiPassword: authStore.shop?.wifi_password,
+    date: formatDate(order.created_at),
+    currency: order.payment_currency || "USD",
+    discountAmount: order.discount_amount ? Number(order.discount_amount) : 0,
+  };
+
   showReceiptModal.value = true;
   showDetailsModal.value = false;
 }
@@ -438,8 +461,9 @@ function formatAmount(order: any) {
     </div>
 
     <ReceiptModal
+      v-if="showReceiptModal && receiptData"
       :show="showReceiptModal"
-      :order="selectedOrder"
+      :receipt-data="receiptData"
       @close="showReceiptModal = false"
     />
 
