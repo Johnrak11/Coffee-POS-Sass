@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Test scripts (local only)
+/tests/test-concurrency.ps1
+/tests/test-single-order.ps1

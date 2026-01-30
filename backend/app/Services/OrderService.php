@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\TableSession;
 use App\Models\Shop;
+use Illuminate\Support\Facades\DB;
 
 class OrderService
 {
@@ -20,184 +21,204 @@ class OrderService
 
     /**
      * Create order from cart
+     *
+     * SCALABILITY FIX: Wrapped in DB::transaction() to ensure atomicity
+     * All operations succeed together or all fail together
      */
     public function createFromCart(TableSession $session, string $paymentMethod): Order
     {
-        $cart = $this->cartService->getCart($session);
+        return DB::transaction(function () use ($session, $paymentMethod) {
+            $cart = $this->cartService->getCart($session);
 
-        if (count($cart['items']) === 0) {
-            throw new \Exception('Cart is empty');
-        }
+            if (count($cart['items']) === 0) {
+                throw new \Exception('Cart is empty');
+            }
 
-        // Generate order number
-        $orderNumber = $this->generateOrderNumber($session->shopTable->shop_id);
+            // Generate order number (with locking to prevent race condition)
+            $orderNumber = $this->generateOrderNumber($session->shopTable->shop_id);
 
-        // Determine confirmation status
-        $confirmationStatus = ($paymentMethod === 'cash') ? 'pending_confirmation' : 'confirmed';
+            // Determine confirmation status
+            $confirmationStatus = ($paymentMethod === 'cash') ? 'pending_confirmation' : 'confirmed';
 
-        // Calculate Discount
-        $promotionResult = $this->promotionService->calculateDiscount(
-            new Order(['shop_id' => $session->shopTable->shop_id, 'total_amount' => $cart['subtotal'] ?? $cart['total']]),
-            $cart['items']->toArray()
-        );
+            // Calculate Discount
+            $promotionResult = $this->promotionService->calculateDiscount(
+                new Order(['shop_id' => $session->shopTable->shop_id, 'total_amount' => $cart['subtotal'] ?? $cart['total']]),
+                $cart['items']->toArray()
+            );
 
-        $discountAmount = $promotionResult['discount_amount'];
-        $promotionId = $promotionResult['promotion_id'];
+            $discountAmount = $promotionResult['discount_amount'];
+            $promotionId = $promotionResult['promotion_id'];
 
-        // Use subtotal if available (from our updated CartService), else fallback to total
-        $baseTotal = $cart['subtotal'] ?? $cart['total'];
-        $finalTotal = max(0, $baseTotal - $discountAmount);
+            // Use subtotal if available (from our updated CartService), else fallback to total
+            $baseTotal = $cart['subtotal'] ?? $cart['total'];
+            $finalTotal = max(0, $baseTotal - $discountAmount);
 
-        // Create order
-        $order = Order::create([
-            'shop_id' => $session->shopTable->shop_id,
-            'table_session_id' => $session->id,
-            'order_number' => $orderNumber,
-            'total_amount' => $finalTotal,
-            'discount_amount' => $discountAmount,
-            'promotion_id' => $promotionId,
-            'payment_method' => $paymentMethod,
-            'payment_status' => 'pending',
-            'confirmation_status' => $confirmationStatus,
-            'fulfillment_status' => 'queue',
-        ]);
-
-        // Create order items
-        foreach ($cart['items'] as $item) {
-            $order->items()->create([
-                'product_id' => $item['product']['id'],
-                'product_variant_id' => $item['variant_id'] ?? null,
-                'quantity' => $item['quantity'],
-                'price' => $item['product']['price'],
-                'extra_price' => $item['variant_extra_price'] ?? 0,
-                'subtotal' => ($item['product']['price'] + ($item['variant_extra_price'] ?? 0)) * $item['quantity'],
+            // Create order
+            $order = Order::create([
+                'shop_id' => $session->shopTable->shop_id,
+                'table_session_id' => $session->id,
+                'order_number' => $orderNumber,
+                'total_amount' => $finalTotal,
+                'discount_amount' => $discountAmount,
+                'promotion_id' => $promotionId,
+                'payment_method' => $paymentMethod,
+                'payment_status' => 'pending',
+                'confirmation_status' => $confirmationStatus,
+                'fulfillment_status' => 'queue',
+                // Queue number will be set automatically by model event (for now)
+                // TODO: Move to explicit generation after migration
             ]);
-        }
 
-        // Clear cart after order creation
-        $this->cartService->clearCart($session);
+            // Create order items
+            foreach ($cart['items'] as $item) {
+                $order->items()->create([
+                    'product_id' => $item['product']['id'],
+                    'product_variant_id' => $item['variant_id'] ?? null,
+                    'quantity' => $item['quantity'],
+                    'price' => $item['product']['price'],
+                    'extra_price' => $item['variant_extra_price'] ?? 0,
+                    'subtotal' => ($item['product']['price'] + ($item['variant_extra_price'] ?? 0)) * $item['quantity'],
+                ]);
+            }
 
-        return $order;
+            // Clear cart after order creation
+            $this->cartService->clearCart($session);
+
+            return $order;
+        });
     }
 
     /**
      * Create POS order directly (no session)
+     *
+     * SCALABILITY FIX: Wrapped in DB::transaction() to ensure atomicity
      */
     public function createPosOrder(int $shopId, array $items, string $paymentMethod, string $paymentCurrency = 'USD', float $receivedAmount = 0, ?int $userId = null): Order
     {
-        if (empty($items)) {
-            throw new \Exception('Order items are empty');
-        }
-
-        // Calculate total
-        $total = 0;
-        foreach ($items as $item) {
-            $price = $item['price'];
-            $extraPrice = 0;
-
-            // Handle legacy variant_price
-            if (isset($item['variant_price'])) {
-                $extraPrice += $item['variant_price'];
+        return DB::transaction(function () use ($shopId, $items, $paymentMethod, $paymentCurrency, $receivedAmount, $userId) {
+            if (empty($items)) {
+                throw new \Exception('Order items are empty');
             }
 
-            // Handle new options
-            if (isset($item['options']) && is_array($item['options'])) {
-                foreach ($item['options'] as $option) {
-                    $extraPrice += ($option['extra_price'] ?? 0);
+            // Calculate total
+            $subtotal = 0; // Fix: Initialize properly
+            foreach ($items as $item) {
+                $price = $item['price'];
+                $extraPrice = 0;
+
+                // Handle legacy variant_price
+                if (isset($item['variant_price'])) {
+                    $extraPrice += $item['variant_price'];
                 }
-            }
 
-            $subtotal += ($price + $extraPrice) * $item['quantity'];
-        }
-
-        // Calculate Promotion
-        $promotionResult = $this->promotionService->calculateDiscount(
-            new Order(['shop_id' => $shopId, 'total_amount' => $subtotal]),
-            $items
-        );
-
-        $discountAmount = $promotionResult['discount_amount'];
-        $promotionId = $promotionResult['promotion_id'];
-        $total = max(0, $subtotal - $discountAmount);
-
-        // Generate order number
-        $orderNumber = $this->generateOrderNumber($shopId);
-
-        // Fetch Shop Exchange Rate
-        $shop = Shop::find($shopId);
-        $exchangeRate = $shop ? $shop->exchange_rate : 4100;
-
-        // Convert total to KHR if paid in KHR
-        if ($paymentCurrency === 'KHR') {
-            // Calculate KHR total from USD total (value of goods)
-            // Note: Currently $total is in USD (sum of item prices)
-            $total = ceil(($total * $exchangeRate) / 100) * 100;
-        }
-
-        // Create order
-        $order = Order::create([
-            'shop_id' => $shopId,
-            'table_session_id' => null, // No session for POS
-            'order_number' => $orderNumber,
-            'total_amount' => $total,
-            'discount_amount' => $discountAmount,
-            'promotion_id' => $promotionId,
-            'payment_method' => $paymentMethod,
-            'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending',
-            'fulfillment_status' => 'queue',
-            'payment_currency' => $paymentCurrency,
-            'exchange_rate_snapshot' => $exchangeRate,
-            'received_amount' => $receivedAmount,
-            'user_id' => $userId,
-            'confirmation_status' => 'confirmed', // POS orders are always confirmed
-        ]);
-
-        // Create order items
-        // Create order items
-        foreach ($items as $item) {
-            $basePrice = $item['price'];
-            $extraPrice = $item['variant_price'] ?? 0;
-
-            // Calculate total extra price from options
-            if (isset($item['options']) && is_array($item['options'])) {
-                foreach ($item['options'] as $option) {
-                    $extraPrice += ($option['extra_price'] ?? 0);
+                // Handle new options
+                if (isset($item['options']) && is_array($item['options'])) {
+                    foreach ($item['options'] as $option) {
+                        $extraPrice += ($option['extra_price'] ?? 0);
+                    }
                 }
+
+                $subtotal += ($price + $extraPrice) * $item['quantity'];
             }
 
-            $orderItem = $order->items()->create([
-                'product_id' => $item['product_id'],
-                'product_variant_id' => $item['product_variant_id'] ?? null,
-                'quantity' => $item['quantity'],
-                'price' => $basePrice,
-                'extra_price' => $extraPrice,
-                'subtotal' => ($basePrice + $extraPrice) * $item['quantity'],
+            // Calculate Promotion
+            $promotionResult = $this->promotionService->calculateDiscount(
+                new Order(['shop_id' => $shopId, 'total_amount' => $subtotal]),
+                $items
+            );
+
+            $discountAmount = $promotionResult['discount_amount'];
+            $promotionId = $promotionResult['promotion_id'];
+            $total = max(0, $subtotal - $discountAmount);
+
+            // Generate order number (with locking to prevent race condition)
+            $orderNumber = $this->generateOrderNumber($shopId);
+
+            // Fetch Shop Exchange Rate
+            $shop = Shop::find($shopId);
+            $exchangeRate = $shop ? $shop->exchange_rate : 4100;
+
+            // Convert total to KHR if paid in KHR
+            if ($paymentCurrency === 'KHR') {
+                // Calculate KHR total from USD total (value of goods)
+                // Note: Currently $total is in USD (sum of item prices)
+                $total = ceil(($total * $exchangeRate) / 100) * 100;
+            }
+
+            // Create order
+            $order = Order::create([
+                'shop_id' => $shopId,
+                'table_session_id' => null, // No session for POS
+                'order_number' => $orderNumber,
+                'total_amount' => $total,
+                'discount_amount' => $discountAmount,
+                'promotion_id' => $promotionId,
+                'payment_method' => $paymentMethod,
+                'payment_status' => $paymentMethod === 'cash' ? 'paid' : 'pending',
+                'fulfillment_status' => 'queue',
+                'payment_currency' => $paymentCurrency,
+                'exchange_rate_snapshot' => $exchangeRate,
+                'received_amount' => $receivedAmount,
+                'user_id' => $userId,
+                'confirmation_status' => 'confirmed', // POS orders are always confirmed
+                // Queue number will be set automatically by model event (for now)
             ]);
 
-            // Save options
-            if (isset($item['options']) && is_array($item['options'])) {
-                foreach ($item['options'] as $option) {
-                    $orderItem->options()->create([
-                        'product_variant_id' => $option['product_variant_id'] ?? null,
-                        'group_name' => $option['group_name'],
-                        'option_name' => $option['option_name'],
-                        'extra_price' => $option['extra_price'] ?? 0,
-                    ]);
+            // Create order items
+            foreach ($items as $item) {
+                $basePrice = $item['price'];
+                $extraPrice = $item['variant_price'] ?? 0;
+
+                // Calculate total extra price from options
+                if (isset($item['options']) && is_array($item['options'])) {
+                    foreach ($item['options'] as $option) {
+                        $extraPrice += ($option['extra_price'] ?? 0);
+                    }
+                }
+
+                $orderItem = $order->items()->create([
+                    'product_id' => $item['product_id'],
+                    'product_variant_id' => $item['product_variant_id'] ?? null,
+                    'quantity' => $item['quantity'],
+                    'price' => $basePrice,
+                    'extra_price' => $extraPrice,
+                    'subtotal' => ($basePrice + $extraPrice) * $item['quantity'],
+                ]);
+
+                // Save options
+                if (isset($item['options']) && is_array($item['options'])) {
+                    foreach ($item['options'] as $option) {
+                        $orderItem->options()->create([
+                            'product_variant_id' => $option['product_variant_id'] ?? null,
+                            'group_name' => $option['group_name'],
+                            'option_name' => $option['option_name'],
+                            'extra_price' => $option['extra_price'] ?? 0,
+                        ]);
+                    }
                 }
             }
-        }
 
-        return $order;
+            return $order;
+        });
     }
 
     /**
      * Generate unique order number
+     *
+     * CRITICAL SCALABILITY FIX:
+     * - Uses lockForUpdate() to prevent race conditions
+     * - Wrapped in transaction (ensure called within transaction context)
+     * - Multiple concurrent orders will wait for lock, ensuring unique numbers
      */
     protected function generateOrderNumber(int $shopId): string
     {
         $date = now()->format('Ymd');
+
+        // CRITICAL: Lock the last order row to prevent concurrent access
+        // This ensures only ONE process can generate a number at a time
         $lastOrder = Order::where('shop_id', $shopId)
             ->where('order_number', 'like', "ORD-{$date}-%")
+            ->lockForUpdate() // 🔒 RACE CONDITION FIX
             ->latest('id')
             ->first();
 
@@ -277,6 +298,8 @@ class OrderService
             ->where('shop_id', $shopId)
             ->visibleToStaff() // Hides 'partial'
             ->whereIn('fulfillment_status', ['queue', 'preparing'])
+            // CRITICAL FIX: Filter out rejected/failed orders from kitchen
+            ->whereIn('payment_status', ['pending_payment', 'paid', 'partially_paid'])
             ->where(function ($query) {
                 // Show if confirmed OR confirmation_status is null (legacy/pos)
                 $query->where('confirmation_status', 'confirmed')

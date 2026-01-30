@@ -20,6 +20,8 @@ class PosOrderController extends Controller
     /**
      * Create a new POS order
      * POST /api/staff/orders
+     *
+     * SCALABILITY FIX: Entire flow wrapped in outer transaction
      */
     public function store(Request $request)
     {
@@ -41,85 +43,91 @@ class PosOrderController extends Controller
         ]);
 
         try {
-            // Safety Check: Verify User Exists to avoid FK Integrity Error (1452)
-            // This handles cases where a user might be deleted but still has a valid token
-            $userId = Auth::id();
-            if ($userId && !\App\Models\User::where('id', $userId)->exists()) {
-                $userId = null;
-            }
+            // CRITICAL: Wrap EVERYTHING in one transaction
+            // If KHQR generation fails, order creation rolls back too
+            $result = \Illuminate\Support\Facades\DB::transaction(function () use ($validated) {
+                // Safety Check: Verify User Exists to avoid FK Integrity Error (1452)
+                $userId = \Illuminate\Support\Facades\Auth::id();
+                if ($userId && !\App\Models\User::where('id', $userId)->exists()) {
+                    $userId = null;
+                }
 
-            $order = $this->orderService->createPosOrder(
-                $validated['shop_id'],
-                $validated['items'],
-                $validated['payment_method'],
-                $validated['payment_currency'] ?? 'USD',
-                $validated['received_amount'] ?? 0,
-                $userId
-            );
-
-            // KHQR Integration: Generate QR immediately if method is KHQR
-            if ($validated['payment_method'] === 'khqr') {
-                $bakongService = app(\App\Services\BakongService::class);
-                $shop = Shop::find($validated['shop_id']);
-
-                $qrResult = $bakongService->generateQr(
-                    (float) $order->total_amount,
-                    $order->payment_currency ?? 'USD',
-                    [
-                        'merchant_name' => $shop->merchant_name ?? $shop->name ?? 'Coffee POS',
-                        'merchant_city' => $shop->merchant_city ?? 'Phnom Penh',
-                        'telegram_chat_id' => $shop->bakong_telegram_chat_id,
-                        'order_id' => $order->order_number,
-                    ]
+                $order = $this->orderService->createPosOrder(
+                    $validated['shop_id'],
+                    $validated['items'],
+                    $validated['payment_method'],
+                    $validated['payment_currency'] ?? 'USD',
+                    $validated['received_amount'] ?? 0,
+                    $userId
                 );
 
-                // Cast to array for safety
-                $qrResult = (array) $qrResult;
+                // KHQR Integration: Generate QR immediately if method is KHQR
+                if ($validated['payment_method'] === 'khqr') {
+                    $bakongService = app(\App\Services\BakongService::class);
+                    $shop = Shop::find($validated['shop_id']);
 
-                if ($qrResult) {
-                    // Support both flat structure and nested 'data' structure
-                    $data = isset($qrResult['data']) ? (array) $qrResult['data'] : $qrResult;
+                    $qrResult = $bakongService->generateQr(
+                        (float) $order->total_amount,
+                        $order->payment_currency ?? 'USD',
+                        [
+                            'merchant_name' => $shop->merchant_name ?? $shop->name ?? 'Coffee POS',
+                            'merchant_city' => $shop->merchant_city ?? 'Phnom Penh',
+                            'telegram_chat_id' => $shop->bakong_telegram_chat_id,
+                            'order_id' => $order->order_number,
+                        ]
+                    );
 
-                    if (isset($data['qr_string']) && isset($data['md5'])) {
-                        $order->khqr_md5 = $data['md5'];
-                        $order->khqr_string = $data['qr_string'];
-                        $order->save();
+                    // Cast to array for safety
+                    $qrResult = (array) $qrResult;
 
-                        // Attach QR result to response so frontend can display it
-                        $order->qr_data = $qrResult;
+                    if ($qrResult) {
+                        // Support both flat structure and nested 'data' structure
+                        $data = isset($qrResult['data']) ? (array) $qrResult['data'] : $qrResult;
 
-                        // Create Transaction Record (KHQR)
-                        \App\Models\Transaction::create([
-                            'order_id' => $order->id,
-                            'payment_method' => 'khqr',
-                            'amount' => $order->total_amount,
-                            'currency' => $order->payment_currency ?? 'USD',
-                            'khqr_string' => $data['qr_string'],
-                            'md5_hash' => $data['md5'],
-                            'payload' => $qrResult
-                        ]);
+                        if (isset($data['qr_string']) && isset($data['md5'])) {
+                            $order->khqr_md5 = $data['md5'];
+                            $order->khqr_string = $data['qr_string'];
+                            $order->save();
+
+                            // Attach QR result to response so frontend can display it
+                            $order->qr_data = $qrResult;
+
+                            // Create Transaction Record (KHQR)
+                            \App\Models\Transaction::create([
+                                'order_id' => $order->id,
+                                'payment_method' => 'khqr',
+                                'amount' => $order->total_amount,
+                                'currency' => $order->payment_currency ?? 'USD',
+                                'khqr_string' => $data['qr_string'],
+                                'md5_hash' => $data['md5'],
+                                'payload' => $qrResult
+                            ]);
+                        }
                     }
+                } else {
+                    // Create Transaction Record (Cash)
+                    \App\Models\Transaction::create([
+                        'order_id' => $order->id,
+                        'payment_method' => 'cash',
+                        'amount' => $order->total_amount,
+                        'currency' => $order->payment_currency ?? 'USD',
+                        'khqr_string' => 'CASH_MANUAL',
+                        'md5_hash' => 'CASH_' . uniqid(),
+                        'payload' => ['message' => 'Cash Payment Manual']
+                    ]);
                 }
-            } else {
-                // Create Transaction Record (Cash)
-                \App\Models\Transaction::create([
-                    'order_id' => $order->id,
-                    'payment_method' => 'cash',
-                    'amount' => $order->total_amount,
-                    'currency' => $order->payment_currency ?? 'USD',
-                    'khqr_string' => 'CASH_MANUAL',
-                    'md5_hash' => 'CASH_' . uniqid(),
-                    'payload' => ['message' => 'Cash Payment Manual']
-                ]);
-            }
+
+                return $order;
+            });
 
             // Send Database Notification to all staff in this shop
+            // OUTSIDE transaction - notification is async/queued
             $shopUsers = \App\Models\User::where('shop_id', $validated['shop_id'])->get();
-            \Illuminate\Support\Facades\Notification::send($shopUsers, new \App\Notifications\NewOrderNotification($order));
+            \Illuminate\Support\Facades\Notification::send($shopUsers, new \App\Notifications\NewOrderNotification($result));
 
             return response()->json([
                 'success' => true,
-                'order' => $order->load(['items.product', 'items.variant', 'items.options'])
+                'order' => $result->load(['items.product', 'items.variant', 'items.options'])
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);

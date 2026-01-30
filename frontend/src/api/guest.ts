@@ -48,8 +48,13 @@ export const guestApi = {
   /**
    * Scan QR code and create guest session
    */
-  async scanTable(qrToken: string, sessionToken?: string): Promise<AxiosResponse<GuestSession>> {
-    return apiClient.post(`/guest/scan/${qrToken}`, { session_token: sessionToken });
+  async scanTable(
+    qrToken: string,
+    sessionToken?: string,
+  ): Promise<AxiosResponse<GuestSession>> {
+    return apiClient.post(`/guest/scan/${qrToken}`, {
+      session_token: sessionToken,
+    });
   },
 
   /**
@@ -149,7 +154,11 @@ export const guestApi = {
     currency: "USD" | "KHR",
     sessionToken: string,
   ): Promise<AxiosResponse<any>> {
-    return apiClient.post("/khqr/generate", { amount, currency, session_token: sessionToken });
+    return apiClient.post("/khqr/generate", {
+      amount,
+      currency,
+      session_token: sessionToken,
+    });
   },
 
   /**
@@ -176,6 +185,18 @@ export const guestApi = {
       order_id: orderId,
       khqr_md5: md5,
     });
+  },
+
+  /**
+   * Get all orders for current session
+   */
+  async getSessionOrders(
+    sessionToken: string,
+  ): Promise<AxiosResponse<{ orders: any[] }>> {
+    return apiClient.get("/guest/orders", {
+      params: { session_token: sessionToken },
+      skipLoading: true,
+    } as any);
   },
 };
 

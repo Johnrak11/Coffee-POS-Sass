@@ -1,0 +1,22 @@
+{
+    "shop_id": 1,
+    "items": [
+        {
+            "product_id": 1,
+            "quantity": 2,
+            "price": 3.50,
+            "variant_price": 0,
+            "options": []
+        },
+        {
+            "product_id": 2,
+            "quantity": 1,
+            "price": 5.00,
+            "variant_price": 0,
+            "options": []
+        }
+    ],
+    "payment_method": "cash",
+    "payment_currency": "USD",
+    "received_amount": 12.00
+}

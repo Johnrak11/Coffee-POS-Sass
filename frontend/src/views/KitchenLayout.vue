@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
+import { useKitchenStore } from "@/stores/kitchen";
 import { useRouter } from "vue-router";
 
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
+const kitchenStore = useKitchenStore();
 const router = useRouter();
 
 function logout() {
@@ -14,6 +16,14 @@ function logout() {
 
 function goToPos() {
   router.push("/pos");
+}
+
+async function handleMarkAllServed() {
+  // Mark all visible orders as served
+  const promises = kitchenStore.orders.map((order) =>
+    kitchenStore.updateStatus(order.id, "served"),
+  );
+  await Promise.all(promises);
 }
 </script>
 
@@ -88,6 +98,20 @@ function goToPos() {
               d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
             />
           </svg>
+        </button>
+
+        <!-- Mark All as Served Button -->
+        <button
+          @click="handleMarkAllServed"
+          :disabled="kitchenStore.orders.length === 0"
+          class="px-4 py-2 rounded-lg text-sm text-white transition-colors font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          :class="
+            kitchenStore.orders.length === 0
+              ? 'bg-gray-400'
+              : 'bg-primary-600 hover:bg-primary-500'
+          "
+        >
+          ✓ Mark All as Served
         </button>
 
         <button
