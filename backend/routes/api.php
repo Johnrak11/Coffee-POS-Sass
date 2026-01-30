@@ -39,6 +39,9 @@ Route::prefix('guest')->group(function () {
 
     // Order Status (for payment polling)
     Route::get('order/{orderId}/status', [OrderController::class, 'getOrderStatus']);
+
+    // Order History
+    Route::get('orders', [OrderController::class, 'getSessionOrders']);
 });
 
 // KHQR Integration

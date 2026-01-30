@@ -74,6 +74,19 @@ async function handleNextStatus(order: any) {
     order.fulfillment_status === "queue" ? "preparing" : "served";
   await kitchenStore.updateStatus(order.id, nextStatus);
 }
+
+async function handleMarkAllOrdersServed() {
+  // Mark all visible orders as served
+  const promises = kitchenStore.orders.map((order) =>
+    kitchenStore.updateStatus(order.id, "served"),
+  );
+  await Promise.all(promises);
+}
+
+// Expose function to parent components
+defineExpose({
+  handleMarkAllOrdersServed,
+});
 </script>
 
 <template>

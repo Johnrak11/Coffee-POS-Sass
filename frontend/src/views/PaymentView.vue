@@ -57,30 +57,43 @@ async function checkPaymentStatus() {
 }
 
 function handleSuccess() {
-  if (pollInterval) clearInterval(pollInterval);
+  if (pollInterval) clearTimeout(pollInterval);
   processing.value = true;
   setTimeout(() => {
     router.push(`/success/${orderId}`);
   }, 1500);
 }
 
+// SCALABILITY FIX: Exponential backoff for polling
+let pollDelay = 2000; // Start at 2s
+const MAX_POLL_DELAY = 10000; // Max 10s
+const BACKOFF_MULTIPLIER = 1.5;
+
+async function pollPaymentStatus() {
+  // 1. Refresh basic order details (in case specific webhook updated it)
+  await fetchOrderDetails();
+
+  // 2. Active check using MD5 if available and still pending
+  if (md5.value && order.value?.payment_status === "pending") {
+    await checkPaymentStatus();
+
+    // Increase delay for next poll (exponential backoff)
+    pollDelay = Math.min(pollDelay * BACKOFF_MULTIPLIER, MAX_POLL_DELAY);
+
+    // Schedule next poll
+    pollInterval = setTimeout(pollPaymentStatus, pollDelay);
+  }
+}
+
 onMounted(async () => {
   await fetchOrderDetails();
 
-  // Poll every 3 seconds
-  pollInterval = setInterval(async () => {
-    // 1. Refresh basic order details (in case specific webhook updated it)
-    await fetchOrderDetails();
-
-    // 2. Active check using MD5 if available and still pending
-    if (md5.value && order.value?.payment_status === "pending") {
-      await checkPaymentStatus();
-    }
-  }, 3000);
+  // Start polling with exponential backoff
+  pollInterval = setTimeout(pollPaymentStatus, pollDelay);
 });
 
 onUnmounted(() => {
-  if (pollInterval) clearInterval(pollInterval);
+  if (pollInterval) clearTimeout(pollInterval);
 });
 
 async function mockSuccess() {

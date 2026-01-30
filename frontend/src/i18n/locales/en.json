@@ -243,6 +243,47 @@
     "connectToWifiForCash": "Please connect to the Shop Wi-Fi to pay with Cash.",
     "partialPaymentNotice": "Items in cart will be available after paying the balance."
   },
+  "tracking": {
+    "orderConfirmed": "Order Confirmed!",
+    "orderRejected": "Order Rejected",
+    "orderReady": "Order Ready!",
+    "preparingOrder": "We're preparing your delicious order",
+    "pickupAtCounter": "Please pick up your order at the counter",
+    "sorryCouldNotProcess": "Sorry, your order could not be processed",
+    "yourQueueNumber": "YOUR QUEUE NUMBER",
+    "whatShouldYouDo": "What should you do?",
+    "contactStaffOrReturn": "Please contact staff for assistance or return to the menu to place a new order.",
+    "backToMenu": "Back to Menu",
+    "downloadReceipt": "Download Receipt",
+    "orderMore": "Order More",
+    "paymentOnPickup": "Payment on Pickup",
+    "payAtCounterWhenCollecting": "Pay at counter when collecting",
+    "inQueue": "In Queue",
+    "currentlyPreparing": "Currently Preparing",
+    "currentlyPreparingLast": "",
+    "readyForPickup": "Ready for Pickup",
+    "orderServed": "Order Served"
+  },
+  "ordersModal": {
+    "myOrders": "My Orders",
+    "activeOrders": "Active Orders",
+    "pastOrders": "Past Orders",
+    "trackOrder": "Track Order",
+    "noOrdersYet": "No orders yet",
+    "placeFirstOrder": "Place your first order to see it here",
+    "queue": "Queue",
+    "inQueue": "In Queue",
+    "ready": "Ready",
+    "item": "item",
+    "items": "items"
+  },
+  "customizeModal": {
+    "totalPrice": "Total Price",
+    "basePrice": "Base Price",
+    "options": "Options",
+    "promotionsApply": "* Promotions apply at checkout",
+    "addToOrder": "Add to Order"
+  },
   "validation": {
     "required": "This field is required",
     "invalidEmail": "Invalid email address",

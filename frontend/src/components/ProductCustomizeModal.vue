@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useThemeStore } from "@/stores/theme";
 
 const props = defineProps<{
@@ -8,6 +9,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["close", "add-to-cart"]);
+const { t } = useI18n();
 const themeStore = useThemeStore();
 
 const selections = ref<Record<string, any>>({});
@@ -209,7 +211,9 @@ function formatCurrency(amount: number) {
               </button>
             </div>
             <div class="text-right">
-              <div class="text-xs text-gray-500">Total Price</div>
+              <div class="text-xs text-gray-500">
+                {{ $t("customizeModal.totalPrice") }}
+              </div>
               <div class="text-xl font-bold">
                 {{ formatCurrency(totalPrice) }}
               </div>
@@ -218,7 +222,7 @@ function formatCurrency(amount: number) {
           <!-- Price Breakdown -->
           <div class="text-xs text-gray-500 bg-gray-100 p-2 rounded-lg">
             <div class="flex justify-between">
-              <span>Base Price:</span>
+              <span>{{ $t("customizeModal.basePrice") }}:</span>
               <span>{{
                 formatCurrency(Number(product?.price || 0) * quantity)
               }}</span>
@@ -231,7 +235,7 @@ function formatCurrency(amount: number) {
               "
               class="flex justify-between"
             >
-              <span>Options:</span>
+              <span>{{ $t("customizeModal.options") }}:</span>
               <span
                 >+{{
                   formatCurrency(
@@ -244,7 +248,7 @@ function formatCurrency(amount: number) {
               >
             </div>
             <div class="text-[10px] text-gray-400 mt-1">
-              * Promotions apply at checkout
+              {{ $t("customizeModal.promotionsApply") }}
             </div>
           </div>
         </div>
@@ -252,7 +256,7 @@ function formatCurrency(amount: number) {
           @click="addToCart"
           class="w-full py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary-900/20 transition-all transform active:scale-95"
         >
-          Add to Order
+          {{ $t("customizeModal.addToOrder") }}
         </button>
       </div>
     </div>

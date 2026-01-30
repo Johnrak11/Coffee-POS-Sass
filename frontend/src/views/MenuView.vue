@@ -6,6 +6,8 @@ import { guestApi } from "@/api";
 import { useCartStore } from "@/stores/cart";
 import { useSessionStore } from "@/stores/session";
 import ProductCustomizeModal from "@/components/ProductCustomizeModal.vue";
+import OrdersModal from "@/components/OrdersModal.vue";
+import LanguageSwitcher from "@/components/common/LanguageSwitcher.vue";
 
 interface Product {
   id: number;
@@ -35,6 +37,7 @@ const loading = ref(true);
 const searchQuery = ref("");
 const showCustomizeModal = ref(false);
 const selectedProduct = ref<Product | null>(null);
+const showOrdersModal = ref(false);
 
 const isHeaderHidden = ref(false);
 let lastScrollY = 0;
@@ -403,31 +406,57 @@ async function addToCart(product: Product) {
           </div>
         </div>
 
-        <!-- Cart Icon -->
-        <button
-          @click="$router.push('/checkout')"
-          class="relative bg-white text-gray-700 w-10 h-10 rounded-full shadow-sm border border-gray-100 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
-        >
-          <svg
-            class="w-6 h-6 mx-auto"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <!-- Language + My Orders + Cart Icons -->
+        <div class="flex items-center gap-2">
+          <!-- Language Switcher -->
+          <LanguageSwitcher />
+
+          <!-- My Orders Button -->
+          <button
+            @click="showOrdersModal = true"
+            class="relative bg-white text-gray-700 w-10 h-10 rounded-full shadow-sm border border-gray-100 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
-          <span
-            v-if="cartStore.itemCount > 0"
-            class="absolute -top-1 -right-1 bg-[#3E2723] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold"
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          </button>
+
+          <!-- Cart Icon -->
+          <button
+            @click="$router.push('/checkout')"
+            class="relative bg-white text-gray-700 w-10 h-10 rounded-full shadow-sm border border-gray-100 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
           >
-            {{ cartStore.itemCount }}
-          </span>
-        </button>
+            <svg
+              class="w-6 h-6 mx-auto"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            <span
+              v-if="cartStore.itemCount > 0"
+              class="absolute -top-1 -right-1 bg-[#3E2723] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold"
+            >
+              {{ cartStore.itemCount }}
+            </span>
+          </button>
+        </div>
       </div>
 
       <!-- Search Bar -->
@@ -683,6 +712,9 @@ async function addToCart(product: Product) {
       @close="showCustomizeModal = false"
       @add-to-cart="handleCustomizeAdd"
     />
+
+    <!-- Orders Modal -->
+    <OrdersModal :show="showOrdersModal" @close="showOrdersModal = false" />
   </div>
 </template>
 
